@@ -1,12 +1,13 @@
 import {
   type InferOutput,
   array,
+  boolean,
   literal,
+  null_,
   object,
   picklist,
   pipe,
   string,
-  tuple,
   union,
   uuid,
 } from "valibot";
@@ -16,11 +17,33 @@ export const Hand = picklist(["グー", "チョキ", "パー"]);
 export type Uuid = InferOutput<typeof Uuid>;
 export const Uuid = pipe(string(), uuid());
 
+export type Player = InferOutput<typeof Player>;
+export const Player = object({
+  name: string(),
+  id: Uuid,
+  dead: boolean(),
+  action: union([Hand, null_()]),
+});
 export type Room = InferOutput<typeof Room>;
 export const Room = object({
   id: pipe(string(), uuid()),
   name: string(),
-  players: array(object({ name: string(), id: Uuid })),
+  status: union([
+    object({
+      type: literal("waitroom"),
+      players: array(Player),
+    }),
+    object({
+      type: literal("playing"),
+      submitted: array(Hand),
+      players: array(Player),
+    }),
+    object({
+      type: literal("end"),
+      winner: object({ id: Uuid, name: string() }),
+      players: array(Player),
+    }),
+  ]),
 });
 
 export type RespMatchEvent = InferOutput<typeof RespMatchEvent>;
@@ -53,7 +76,7 @@ export const RoomEvent = union([
     }),
   }),
   object({
-    type: literal("game end"),
+    type: literal("end"),
     winner: object({
       id: Uuid,
       name: string(),

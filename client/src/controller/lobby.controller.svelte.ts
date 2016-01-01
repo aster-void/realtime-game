@@ -31,6 +31,7 @@ export class LobbyController {
     this.client = createClient({ fetch });
     this.rooms = defaultRooms; // TODO: update rooms based on events
     useEventSource(`${API_ENDPOINT}/stream/lobby`, LobbyEvent, (ev) => {
+      console.log("LobbyEvent", ev);
       switch (ev.type) {
         case "ping":
           break;

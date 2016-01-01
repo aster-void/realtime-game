@@ -1,16 +1,36 @@
 import { LobbyEvent, RoomEvent } from "@repo/share/types";
+import type { Room } from "@repo/share/types";
 import { HTTPException } from "hono/http-exception";
 import { writable } from "svelte/store";
 import * as v from "valibot";
 
-type Room = {
-  id: string;
-  name: string;
-  players: {
-    id: string;
-    name: string;
-  }[];
-};
+function post<T>(path: string, data: T) {
+  const bc = new BroadcastChannel(path);
+  bc.postMessage(data);
+  bc.close();
+}
+function listen<T>(
+  path: string,
+  schema: v.GenericSchema<T>,
+  onMessage: (message: T) => void,
+) {
+  const bc = new BroadcastChannel(path);
+  bc.onmessage = (ev) => {
+    const parseRes = v.safeParse(schema, ev.data);
+    if (!parseRes.success) {
+      console.warn(
+        "[warn] failed to parse room event",
+        ev.data,
+        "for error:",
+        parseRes.issues,
+      );
+    }
+    onMessage(ev.data);
+  };
+  return () => {
+    bc.close();
+  };
+}
 
 const _rooms = <Room[]>[];
 export const rooms: {
@@ -26,22 +46,23 @@ export const rooms: {
   current: _rooms,
   push: (room) => {
     _rooms.push(room);
-    const bc = new BroadcastChannel("lobby");
-    bc.postMessage(<LobbyEvent>{
+    lobby.notify({
       type: "room create",
       room,
     });
-    bc.close();
   },
   set: (index, room) => {
     _rooms[index] = room;
-    const bc = new BroadcastChannel("lobby");
-    bc.postMessage(<LobbyEvent>{
+    post<RoomEvent>(`room:${room.id}`, {
       type: "room update",
       id: room.id,
       room,
     });
-    bc.close();
+    lobby.notify({
+      type: "room update",
+      id: room.id,
+      room,
+    });
   },
   get: (index) => {
     const room = _rooms[index];
@@ -77,60 +98,35 @@ export const rooms: {
     return idx;
   },
   listen: (room: string, onMessage: (message: RoomEvent) => void) => {
-    const bc = new BroadcastChannel(`lobby:${room}`);
-    bc.onmessage = (ev) => {
-      const parseRes = v.safeParse(RoomEvent, ev.data);
-      if (!parseRes.success) {
-        console.warn(
-          "[warn] failed to parse room event",
-          ev.data,
-          "for error:",
-          parseRes.issues,
-        );
-        return;
-      }
-      onMessage(parseRes.output);
-    };
-    return () => {
-      bc.close();
-    };
+    return listen(`room:${room}`, RoomEvent, onMessage);
   },
 };
 export const lobby = {
   notify: (message: LobbyEvent) => {
-    const all = new BroadcastChannel("lobby");
-    all.postMessage(message);
-    all.close();
+    post("lobby", message);
   },
   listen: (onMessage: (message: LobbyEvent) => void) => {
-    const bc = new BroadcastChannel("lobby");
-    bc.onmessage = (ev) => {
-      const parseRes = v.safeParse(LobbyEvent, ev.data);
-      if (!parseRes.success) {
-        console.warn(
-          "[warn] failed to parse lobby event",
-          ev.data,
-          "for error:",
-          parseRes.issues,
-        );
-        return;
-      }
-      onMessage(parseRes.output);
-    };
-    return () => {
-      bc.close();
-    };
+    return listen("lobby", LobbyEvent, onMessage);
   },
 };
+
 export const matchingUsers = writable<string[]>([]);
 
 matchingUsers.subscribe((users) => {
   if (users.length >= 2) {
     const players = users.splice(0, 2);
-    const room = {
+    const room: Room = {
       id: crypto.randomUUID(),
-      name: "room",
-      players: players.map((id) => ({ id, name: id })),
+      name: "random match",
+      status: {
+        type: "waitroom",
+        players: players.map((id) => ({
+          id,
+          name: id,
+          dead: false,
+          action: null,
+        })),
+      },
     };
     rooms.push(room);
     for (const user of players) {

@@ -21,7 +21,9 @@ const lobby = new LobbyController({ fetch, defaultRooms });
                         <button onclick={() => lobby.joinRoom(room.id)}>
                             Join {room.name}
                         </button>
-                        <p>Players: {room.players.length}</p>
+                        {#if room.status.type !== "end"}
+                            <p>Players: {room.status.players.length}</p>
+                        {/if}
                     </li>
                 {:else}
                     <li>No rooms available</li>

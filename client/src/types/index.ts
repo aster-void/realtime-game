@@ -8,7 +8,7 @@ export interface Player {
 export interface Room {
   id: string;
   name: string;
-  status: 'waiting' | 'playing' | 'finished';
+  status: "waiting" | "playing" | "finished";
   players: Player[];
   // Add other room properties as needed
 }

@@ -1,57 +1,52 @@
-import type { RoomEvent } from "@repo/share/types";
-import type { RoomState } from "./room.controller.svelte.ts";
+import type { Room, RoomEvent } from "@repo/share/types";
 
-export function onServerEvent(state: RoomState, ev: RoomEvent): RoomState {
+export function onServerEvent(state: Room, ev: RoomEvent): Room {
   switch (ev.type) {
     // break -> no action
     case "ping": {
       break;
     }
     case "room update": {
-      state.room = ev.room;
-      return state;
+      return ev.room;
     }
     case "player submit": {
-      if (state.status !== "game") {
-        console.warn("wrong event type: expected game, got", state);
-        break;
+      if (state.status.type !== "playing") {
+        console.warn("wrong event type: expected playing, got", state);
+        return state;
       }
       const action = ev.action;
-      for (let i = 0; i < state.room.players.length; i++) {
-        if (state.players[i].id === action.playerId) {
-          state.players[i].hand = action.hand;
-          break;
-        }
-        console.warn("player not found", action.playerId);
+      for (let i = 0; i < state.status.players.length; i++) {
+        state.status.submitted.push(action.hand);
       }
       return state;
     }
     case "next stage": {
-      if (state.status !== "game") {
-        console.warn("wrong event type: expected game, got", state);
+      if (state.status.type !== "playing") {
+        console.warn("wrong event type: expected playing, got", state);
         return state;
       }
       const stage = ev.stage;
-      for (let i = 0; i < state.players.length; i++) {
-        if (stage.dead.includes(state.players[i].id)) {
-          state.players[i].dead = true;
-        } else {
-          state.players[i].hand = null;
+      for (let i = 0; i < state.status.players.length; i++) {
+        if (stage.dead.includes(state.status.players[i].id)) {
+          state.status.players[i].dead = true;
         }
       }
-      break;
+      return state;
     }
-    case "game end": {
-      if (state.status !== "game") {
-        console.warn("wrong event type: expected game, got", state);
+    case "end": {
+      if (state.status.type !== "playing") {
+        console.warn("wrong event type: expected playing, got", state);
         break;
       }
       return {
-        room: state.room,
-        status: "end",
-        winner: {
-          id: ev.winner.id,
-          name: ev.winner.name,
+        ...state,
+        status: {
+          type: "end",
+          winner: {
+            id: ev.winner.id,
+            name: ev.winner.name,
+          },
+          players: state.status.players,
         },
       };
     }

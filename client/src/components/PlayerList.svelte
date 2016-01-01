@@ -1,9 +1,11 @@
 <script lang="ts">
-  import type { Player } from "@/types";
+import type { Room } from "@repo/share/types";
 
-  export let players: Player[] = [];
-  export let status: string = 'waiting';
-  export let onStartGame: () => void = () => {};
+type Props = {
+  room: Room;
+  onStartGame: () => void;
+};
+const { room, onStartGame }: Props = $props();
 </script>
 
 <div class="card bg-base-100 shadow-xl h-full">
@@ -11,28 +13,27 @@
     <h2 class="card-title">
       Players 
       <div class="badge badge-primary">
-        {players.length}
+        {room.status.players.length}
       </div>
     </h2>
     
     <div class="overflow-y-auto max-h-96">
-      {#if players.length > 0}
+      {#if room.status.players.length > 0}
         <ul class="menu bg-base-200 rounded-box">
-          {#each players as player, i}
+          {#each room.status.players as player}
             <li>
               <div class="flex justify-between items-center">
                 <div class="flex items-center gap-3">
                   <div class="avatar placeholder">
                     <div class="bg-neutral text-neutral-content rounded-full w-8">
-                      <span class="text-xs">{player.name[0].toUpperCase()}</span>
+                      <span class="text-xs">{player.name}</span>
                     </div>
                   </div>
                   <div>
                     <div class="font-bold">{player.name}</div>
                     <div class="text-xs opacity-50">ID: {player.id.slice(0, 6)}</div>
                   </div>
-                </div>
-                {i === 0 && <div class="badge badge-primary">Host</div>}
+                </div>  
               </div>
             </li>
           {/each}
@@ -44,15 +45,15 @@
       {/if}
     </div>
 
-    {#if status === "waitroom"}
+    {#if room.status.type === "waitroom"}
       <div class="card-actions justify-end mt-4">
         <button
           class="btn btn-primary w-full"
-          disabled={players.length < 2}
-          on:click={onStartGame}
+          disabled={room.status.players.length < 2}
+          onclick={onStartGame}
         >
-          {players.length < 2 
-            ? `Need ${2 - players.length} more to start` 
+          { room.status.players.length < 2 
+            ? `Need ${2 - room.status.players.length} more to start` 
             : 'Start Game'}
         </button>
       </div>

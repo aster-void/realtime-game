@@ -18,6 +18,7 @@ const route = new Hono()
       const room = rooms.find((room) => room.id === param.room);
       return streamSSE(c, async (stream) => {
         async function sendMessage(ev: RoomEvent) {
+          console.log(ev);
           await stream.writeSSE({
             data: JSON.stringify(ev),
           });

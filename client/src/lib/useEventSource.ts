@@ -9,12 +9,17 @@ export function useEventSource<T>(
   onMount(() => {
     const eventSource = new EventSource(path);
     eventSource.onmessage = (event) => {
-      const parseRes = v.safeParse(schema, JSON.parse(event.data));
+      const data = JSON.parse(event.data);
+      const parseRes = v.safeParse(schema, data);
       if (!parseRes.success) {
-        console.warn("[warn] failed to parse event data", event.data);
-        return;
+        console.warn(
+          "[warn] failed to parse event data",
+          data,
+          "for issue",
+          parseRes.issues,
+        );
       }
-      cb(parseRes.output);
+      cb(data);
     };
     return () => {
       eventSource.close();
