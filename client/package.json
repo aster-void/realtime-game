@@ -1,5 +1,5 @@
 {
-  "name": "-client",
+  "name": "@repo/client",
   "version": "0.0.1",
   "devDependencies": {
     "@sveltejs/adapter-auto": "^6.0.0",
@@ -23,7 +23,9 @@
   },
   "type": "module",
   "dependencies": {
-    "-server": "workspace:*",
+    "@repo/server": "workspace:server",
+    "@repo/share": "workspace:share",
+    "hono": "^4.7.9",
     "runed": "^0.26.0"
   }
 }

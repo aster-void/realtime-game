@@ -1,24 +1,14 @@
 <script lang="ts">
-import type { Room, Uuid } from "share/types";
-import { derived } from "svelte/store";
+import type { Room, Uuid } from "@repo/share/types";
+import { createClient } from "~/api/client.ts";
+import { LobbyController } from "~/states/lobby.controller.svelte";
 
 type Props = {
-  state: {
-    status: "lobby";
-    rooms: Room[] | null;
-  };
+  rooms: Room[] | null;
 };
-const { state }: Props = $props();
-const rooms = $derived(state.rooms);
+const { rooms }: Props = $props();
 
-function randomMatch() {
-  // TODO: Implement random matching logic
-  console.log("Random matching");
-}
-function joinRoom(roomId: Uuid) {
-  // TODO: Implement room joining logic
-  console.log(`Joining room ${roomId}`);
-}
+const lobby = new LobbyController({ fetch });
 </script>
 
 <div class="lobby">
@@ -34,10 +24,10 @@ function joinRoom(roomId: Uuid) {
             <ul>
                 {#each rooms as room}
                     <li>
-                        <button on:click={() => joinRoom(room.id)}>
+                        <button onclick={() => lobby.joinRoom(room.id)}>
                             Join {room.name}
                         </button>
-                        <p>Players: {room.players.length}/{room.maxPlayers}</p>
+                        <p>Players: {room.players.length}</p>
                     </li>
                 {/each}
             </ul>
@@ -45,8 +35,8 @@ function joinRoom(roomId: Uuid) {
     </div>
 
     <div class="create-room">
-        <button on:click={randomMatch}>Random Match</button>
-        <button on:click={() => joinRoom('new')}>Create New Room</button>
+        <button onclick={() => lobby.requestRandomMatch()}>Random Match</button>
+        <button onclick={() => lobby.joinRoom('new')}>Create New Room</button>
     </div>
 </div>
 

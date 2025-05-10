@@ -10,10 +10,12 @@
       },
     },
     "client": {
-      "name": "-client",
+      "name": "@repo/client",
       "version": "0.0.1",
       "dependencies": {
-        "-server": "workspace:*",
+        "@repo/server": "workspace:server",
+        "@repo/share": "workspace:share",
+        "hono": "^4.7.9",
         "runed": "^0.26.0",
       },
       "devDependencies": {
@@ -29,9 +31,10 @@
       },
     },
     "server": {
-      "name": "-server",
+      "name": "@repo/server",
       "dependencies": {
         "@hono/valibot-validator": "^0.5.2",
+        "@repo/share": "workspace:share",
         "hono": "^4.7.9",
         "svelte": "^5.28.2",
         "valibot": "^1.1.0",
@@ -41,19 +44,13 @@
       },
     },
     "share": {
-      "name": "-share",
+      "name": "@repo/share",
       "dependencies": {
         "valibot": "^1.1.0",
       },
     },
   },
   "packages": {
-    "-client": ["-client@workspace:client"],
-
-    "-server": ["-server@workspace:server"],
-
-    "-share": ["-share@workspace:share"],
-
     "@ampproject/remapping": ["@ampproject/remapping@2.3.0", "", { "dependencies": { "@jridgewell/gen-mapping": "^0.3.5", "@jridgewell/trace-mapping": "^0.3.24" } }, "sha512-30iZtAPgz+LTIYoeivqYo853f02jBYSd5uGnGpkFV0M3xOt9aN73erkgYAmZU43x4VfqcnLxW9Kpg3R5LC4YYw=="],
 
     "@biomejs/biome": ["@biomejs/biome@1.9.4", "", { "optionalDependencies": { "@biomejs/cli-darwin-arm64": "1.9.4", "@biomejs/cli-darwin-x64": "1.9.4", "@biomejs/cli-linux-arm64": "1.9.4", "@biomejs/cli-linux-arm64-musl": "1.9.4", "@biomejs/cli-linux-x64": "1.9.4", "@biomejs/cli-linux-x64-musl": "1.9.4", "@biomejs/cli-win32-arm64": "1.9.4", "@biomejs/cli-win32-x64": "1.9.4" }, "bin": { "biome": "bin/biome" } }, "sha512-1rkd7G70+o9KkTn5KLmDYXihGoTaIGO9PIIN2ZB7UJxFrWw04CZHPYiMRjYsaDvVV7hP1dYNRLxSANLaBFGpog=="],
@@ -139,6 +136,12 @@
     "@jridgewell/trace-mapping": ["@jridgewell/trace-mapping@0.3.25", "", { "dependencies": { "@jridgewell/resolve-uri": "^3.1.0", "@jridgewell/sourcemap-codec": "^1.4.14" } }, "sha512-vNk6aEwybGtawWmy/PzwnGDOjCkLWSD2wqvjGGAgOAwCGWySYXfYoxt00IJkTF+8Lb57DwOb3Aa0o9CApepiYQ=="],
 
     "@polka/url": ["@polka/url@1.0.0-next.29", "", {}, "sha512-wwQAWhWSuHaag8c4q/KN/vCoeOJYshAIvMQwD4GpSb3OiZklFfvAgmj0VCBBImRpuF/aFgIRzllXlVX93Jevww=="],
+
+    "@repo/client": ["@repo/client@workspace:client"],
+
+    "@repo/server": ["@repo/server@workspace:server"],
+
+    "@repo/share": ["@repo/share@workspace:share"],
 
     "@rollup/rollup-android-arm-eabi": ["@rollup/rollup-android-arm-eabi@4.40.2", "", { "os": "android", "cpu": "arm" }, "sha512-JkdNEq+DFxZfUwxvB58tHMHBHVgX23ew41g1OQinthJ+ryhdRk67O31S7sYw8u2lTjHUPFxwar07BBt1KHp/hg=="],
 

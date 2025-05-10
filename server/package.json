@@ -1,5 +1,5 @@
 {
-  "name": "-server",
+  "name": "@repo/server",
   "module": "index.ts",
   "type": "module",
   "private": true,
@@ -11,6 +11,7 @@
     "dev": "bun dev"
   },
   "dependencies": {
+    "@repo/share": "workspace:share",
     "@hono/valibot-validator": "^0.5.2",
     "hono": "^4.7.9",
     "svelte": "^5.28.2",

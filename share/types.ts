@@ -16,19 +16,6 @@ export const Hand = picklist(["グー", "チョキ", "パー"]);
 export type Uuid = InferOutput<typeof Uuid>;
 export const Uuid = pipe(string(), uuid());
 
-export type RespGameEvent = InferOutput<typeof RespGameEvent>;
-export const RespGameEvent = union([
-  object({
-    type: literal("play"),
-    player: Uuid,
-    hand: Hand,
-  }),
-  object({
-    type: literal("continue"),
-    dead: array(Uuid),
-  }),
-]);
-
 export type Room = InferOutput<typeof Room>;
 export const Room = object({
   id: pipe(string(), uuid()),
@@ -40,44 +27,51 @@ export type RespMatchEvent = InferOutput<typeof RespMatchEvent>;
 export const RespMatchEvent = object({
   room: Room,
 });
-export type WaitRoomEvent = InferOutput<typeof WaitRoomEvent>;
-export const WaitRoomEvent = union([
+
+export type ActionEvent = InferOutput<typeof ActionEvent>;
+export const ActionEvent = object({
+  playerId: Uuid,
+  hand: Hand,
+});
+export type RoomEvent = InferOutput<typeof RoomEvent>;
+export const RoomEvent = union([
   object({
-    type: literal("player join"),
-    joined: object({
-      name: string(),
-      id: Uuid,
+    type: literal("ping"),
+  }),
+  object({
+    type: literal("room update"),
+    room: Room,
+  }),
+  object({
+    type: literal("player submit"),
+    action: ActionEvent,
+  }),
+  object({
+    type: literal("next stage"),
+    stage: object({
+      dead: array(Uuid),
     }),
   }),
   object({
-    type: literal("player leave"),
-    left: Uuid,
-  }),
-  object({
-    type: literal("room name change"),
-    to: string(),
-  }),
-  object({
-    type: literal("game start"),
+    type: literal("game end"),
+    winner: object({
+      id: Uuid,
+      name: string(),
+    }),
   }),
 ]);
 
-export type RespGlobalEvent = InferOutput<typeof RespGlobalEvent>;
-export const RespGlobalEvent = union([
+export type LobbyEvent = InferOutput<typeof LobbyEvent>;
+export const LobbyEvent = union([
   object({
-    type: literal("transition"),
-    to: picklist(["lobby", "matching", "waitroom", "game", "end"]),
+    type: literal("ping"),
   }),
   object({
-    type: literal("match"),
-    content: RespMatchEvent,
+    type: literal("match success"),
+    room: Room,
   }),
   object({
-    type: literal("waitroom"),
-    content: WaitRoomEvent,
-  }),
-  object({
-    type: literal("game"),
-    content: RespGameEvent,
+    type: literal("match init"),
+    matchId: Uuid,
   }),
 ]);

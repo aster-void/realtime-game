@@ -1,5 +1,5 @@
 {
-  "name": "-share",
+  "name": "@repo/share",
   "module": "index.ts",
   "type": "module",
   "private": true,

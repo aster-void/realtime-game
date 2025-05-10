@@ -9,8 +9,11 @@
   "private": true,
   "scripts": {
     "prepare": "bun lefthook install && bun sync",
-    "dev": "bun --filter=-client|-server dev",
-    "sync": "bun --filter=-client sync",
+    "dev": "bun --env-file=.env --filter='@repo/client|@repo/server' run dev",
+    "build": "bun build:web && bun build:server",
+    "build:web": "bun --env-file=.env --filter='@repo/client' run build",
+    "build:server": "bun --env-file=.env --filter='@repo/server' run build",
+    "sync": "bun --filter='@repo/client' sync",
     "fix": "bun biome check . --fix --unsafe",
     "fix:safe": "bun biome check . --fix",
     "check": "bun check:biome",

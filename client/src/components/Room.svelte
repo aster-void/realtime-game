@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { Hand, Room, Uuid } from "share/types";
+import type { Hand, Room, Uuid } from "@repo/share/types";
 type Props = {
   state: {
     status: "game";
