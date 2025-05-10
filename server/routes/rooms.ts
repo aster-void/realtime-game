@@ -1,6 +1,6 @@
-import type { Room } from "@repo/share/types";
+import { type Room, Uuid } from "@repo/share/types";
 import { Hono } from "hono";
-import { get } from "svelte/store";
+import { get, writable } from "svelte/store";
 import * as v from "valibot";
 import { rooms } from "../state";
 import { param } from "../validator";
@@ -24,6 +24,32 @@ const route = new Hono()
       return c.json(get(room));
     },
   )
+  .post(
+    "/",
+    json(
+      v.object({
+        roomName: v.string(),
+        playerName: v.string(),
+      }),
+    ),
+    async (c) => {
+      const json = c.req.valid("json");
+      const player = {
+        id: crypto.randomUUID(),
+        name: json.playerName,
+      };
+      const room: Room = {
+        id: crypto.randomUUID(),
+        name: json.roomName,
+        players: [player],
+      };
+      rooms.push(writable(room));
+      return c.json({
+        room,
+        player,
+      });
+    },
+  )
   .patch(
     "/:id",
     param({
@@ -31,11 +57,12 @@ const route = new Hono()
     }),
     json(
       v.object({
-        user: v.string(),
+        userName: v.string(),
       }),
     ),
     async (c) => {
       const param = c.req.valid("param");
+      const userId: string = crypto.randomUUID();
       const room = rooms.find((room) => get(room).id === param.id);
       if (!room) {
         return c.notFound();
@@ -43,12 +70,16 @@ const route = new Hono()
       const json = c.req.valid("json");
       room.update((room) => {
         room.players.push({
-          id: crypto.randomUUID(),
-          name: json.user,
+          id: userId,
+          name: json.userName,
         });
         return room;
       });
-      return c.json(get(room));
+      const roomData: Room = get(room);
+      return c.json({
+        room: roomData,
+        userId,
+      });
     },
   );
 

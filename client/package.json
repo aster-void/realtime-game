@@ -14,8 +14,8 @@
   },
   "private": true,
   "scripts": {
-    "dev": "vite dev",
-    "build": "vite build",
+    "dev": "bun run --env-file=../.env vite dev",
+    "build": "bun run --env-file=../.env vite build",
     "preview": "vite preview",
     "sync": "svelte-kit sync",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",

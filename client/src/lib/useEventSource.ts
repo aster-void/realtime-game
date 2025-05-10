@@ -11,7 +11,7 @@ export function useEventSource<T>(
     eventSource.onmessage = (event) => {
       const parseRes = v.safeParse(schema, JSON.parse(event.data));
       if (!parseRes.success) {
-        console.warn("[warn] failed to parse", event.data);
+        console.warn("[warn] failed to parse event data", event.data);
         return;
       }
       cb(parseRes.output);

@@ -8,7 +8,7 @@
   },
   "peerDependencies": {},
   "scripts": {
-    "dev": "bun dev"
+    "dev": "PORT=3000 bun run --env-file=../.env --watch ./index.ts"
   },
   "dependencies": {
     "@repo/share": "workspace:share",

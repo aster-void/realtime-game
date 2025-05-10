@@ -1,16 +1,15 @@
 import type { RoomEvent } from "@repo/share/types";
 import type { Writable } from "svelte/store";
-import type { RoomState } from "./room.ts";
+import type { RoomState } from "./room.controller.ts";
 
-export function onServerEvent(globalState: Writable<RoomState>, ev: RoomEvent) {
-  globalState.update((state) => {
+export function onServerEvent(roomState: Writable<RoomState>, ev: RoomEvent) {
+  roomState.update((state) => {
     switch (ev.type) {
       case "ping": {
         break;
       }
       case "room update": {
-        state.room = ev.room;
-        break;
+        return { ...state, room: ev.room };
       }
       case "player submit": {
         if (state.status !== "game") {
@@ -18,19 +17,19 @@ export function onServerEvent(globalState: Writable<RoomState>, ev: RoomEvent) {
           break;
         }
         const action = ev.action;
-        for (let i = 0; i < state.players.length; i++) {
+        for (let i = 0; i < state.room.players.length; i++) {
           if (state.players[i].id === action.playerId) {
             state.players[i].hand = action.hand;
             break;
           }
           console.warn("player not found", action.playerId);
         }
-        break;
+        return { ...state };
       }
       case "next stage": {
         if (state.status !== "game") {
           console.warn("wrong event type: expected game, got", state);
-          break;
+          return state;
         }
         const stage = ev.stage;
         for (let i = 0; i < state.players.length; i++) {

@@ -11,28 +11,24 @@ type Room = {
 };
 
 export const rooms = <Writable<Room>[]>[];
-export const matchingUsers = writable<string[]>();
+export const matchingUsers = writable<string[]>([]);
 
 matchingUsers.subscribe((users) => {
   if (users.length >= 2) {
     const players = users.splice(0, 2);
-    for (const user of players) {
-      const notify = new BroadcastChannel(`lobby:${user}`);
-      const ev: LobbyEvent = {
-        type: "match success",
-        room: {
-          id: crypto.randomUUID(),
-          name: "room",
-          players: players.map((id) => ({ id, name: id })),
-        },
-      };
-      notify.postMessage(ev);
-    }
     const room = {
       id: crypto.randomUUID(),
       name: "room",
       players: players.map((id) => ({ id, name: id })),
     };
+    for (const user of players) {
+      const notify = new BroadcastChannel(`lobby:${user}`);
+      const ev: LobbyEvent = {
+        type: "match success",
+        room,
+      };
+      notify.postMessage(ev);
+    }
     rooms.push(writable(room));
     return [];
   }

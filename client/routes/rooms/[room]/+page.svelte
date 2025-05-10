@@ -1,5 +1,5 @@
 <script lang="ts">
-import { useRoomState } from "../../src/states/room.ts";
+import { useRoomState } from "~/controller/room.controller.ts";
 const { data } = $props();
 
 const _state = useRoomState(data.room);

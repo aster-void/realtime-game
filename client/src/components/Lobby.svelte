@@ -1,14 +1,13 @@
 <script lang="ts">
-import type { Room, Uuid } from "@repo/share/types";
-import { createClient } from "~/api/client.ts";
-import { LobbyController } from "~/states/lobby.controller.svelte";
+import type { Room } from "@repo/share/types";
+import { LobbyController } from "~/controller/lobby.controller.svelte";
 
 type Props = {
-  rooms: Room[] | null;
+  defaultRooms: Room[];
 };
-const { rooms }: Props = $props();
+const { defaultRooms }: Props = $props();
 
-const lobby = new LobbyController({ fetch });
+const lobby = new LobbyController({ fetch, defaultRooms });
 </script>
 
 <div class="lobby">
@@ -16,27 +15,30 @@ const lobby = new LobbyController({ fetch });
 
     <div class="rooms-list">
         <h2>Available Rooms</h2>
-        {#if rooms === null}
-            <p>Loading rooms...</p>
-        {:else if rooms.length === 0}
-            <p>No rooms available. Create one!</p>
-        {:else}
             <ul>
-                {#each rooms as room}
+                {#each lobby.rooms as room}
                     <li>
                         <button onclick={() => lobby.joinRoom(room.id)}>
                             Join {room.name}
                         </button>
                         <p>Players: {room.players.length}</p>
                     </li>
+                {:else}
+                    <li>No rooms available</li>
                 {/each}
             </ul>
-        {/if}
     </div>
 
     <div class="create-room">
         <button onclick={() => lobby.requestRandomMatch()}>Random Match</button>
-        <button onclick={() => lobby.joinRoom('new')}>Create New Room</button>
+        <form onsubmit={(e) => {
+            e.preventDefault();
+            const name = (e.target as HTMLFormElement).elements.namedItem("name") as HTMLInputElement;
+            lobby.createRoom(name.value);
+        }}>
+            <input type="text" name="name" required />
+            <button type="submit">Create</button>
+        </form>
     </div>
 </div>
 

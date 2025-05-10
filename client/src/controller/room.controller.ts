@@ -1,8 +1,8 @@
 import { type Hand, type Room, RoomEvent, type Uuid } from "@repo/share/types";
 import { writable } from "svelte/store";
-import * as v from "valibot";
+import { API_ENDPOINT } from "~/api/client.ts";
 import { useEventSource } from "../lib/useEventSource.ts";
-import { onServerEvent } from "./room.controller.ts";
+import { onServerEvent } from "./room.updater.ts";
 
 export type RoomState =
   | {
@@ -35,7 +35,8 @@ export function useRoomState(room: Room) {
     room,
   });
 
-  useEventSource(`/rooms/${room.id}`, RoomEvent, (ev) => {
+  useEventSource(`${API_ENDPOINT}/stream/rooms/${room.id}`, RoomEvent, (ev) => {
+    console.log("[room/sse]", ev);
     onServerEvent(roomState, ev);
   });
 

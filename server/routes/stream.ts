@@ -1,10 +1,10 @@
-import { RoomEvent } from "@repo/share/types.ts";
+import { LobbyEvent, RoomEvent } from "@repo/share/types.ts";
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { get } from "svelte/store";
 import * as v from "valibot";
-import { matchingUsers, rooms } from "../state.ts";
-import { param, query } from "../validator.ts";
+import { rooms } from "../state.ts";
+import { param } from "../validator.ts";
 
 const route = new Hono()
   .get(
@@ -12,22 +12,22 @@ const route = new Hono()
     param({
       room: v.string(),
     }),
-    query({
-      user: v.string(),
-    }),
     async (c) => {
       const param = c.req.valid("param");
-      const query = c.req.valid("query");
-      const userId = crypto.randomUUID();
       const room = rooms.find((room) => get(room).id === param.room);
       if (!room) {
         return;
       }
       return streamSSE(c, async (stream) => {
-        async function sendMessage(m: RoomEvent | unknown) {
+        async function sendMessage(m: RoomEvent) {
           const parseRes = v.safeParse(RoomEvent, m);
           if (!parseRes.success) {
-            console.warn("[warn] failed to parse", m);
+            console.warn(
+              "[warn] failed to parse room event",
+              m,
+              "for error:",
+              parseRes.issues,
+            );
             return;
           }
           await stream.writeSSE({
@@ -35,8 +35,11 @@ const route = new Hono()
           });
         }
 
-        const unsubscribe = room.subscribe((m) => {
-          sendMessage(m);
+        const unsubscribe = room.subscribe((room) => {
+          sendMessage({
+            type: "room update",
+            room,
+          });
         });
         stream.onAbort(() => {
           unsubscribe();
@@ -50,20 +53,45 @@ const route = new Hono()
       });
     },
   )
-  .get("/lobby", query({}), async (c) => {
+  .get("/lobby", async (c) => {
     const userId = crypto.randomUUID();
+
     return streamSSE(c, async (stream) => {
+      function sendMessage(m: LobbyEvent) {
+        const parseRes = v.safeParse(LobbyEvent, m);
+        if (!parseRes.success) {
+          console.warn(
+            "[warn] failed to parse lobby event",
+            m,
+            "for error:",
+            parseRes.issues,
+          );
+          return;
+        }
+        stream.writeSSE({
+          data: JSON.stringify(parseRes.output),
+        });
+      }
       const notify = new BroadcastChannel(`lobby:${userId}`);
       notify.onmessage = (ev) => {
-        stream.writeSSE({
-          data: JSON.stringify(ev.data),
-        });
+        sendMessage(ev.data);
       };
       stream.onAbort(() => {
         notify.close();
       });
+      sendMessage({
+        type: "match init",
+        matchId: userId,
+      });
+      stream.onAbort(() => {
+        notify.close();
+      });
+
       while (true) {
         await stream.sleep(8000);
+        sendMessage({
+          type: "ping",
+        });
       }
     });
   });

@@ -1,3 +1,4 @@
+import { Uuid } from "@repo/share/types";
 import { Hono } from "hono";
 import * as v from "valibot";
 import { matchingUsers } from "../state";
@@ -7,18 +8,18 @@ const route = new Hono().post(
   "/",
   json(
     v.object({
-      user: v.string(),
+      id: Uuid,
     }),
   ),
   async (c) => {
     const json = c.req.valid("json");
-    const id = crypto.randomUUID();
+    const id = json.id;
 
     matchingUsers.update((users) => {
       users.push(id);
       return users;
     });
-    return c.json({ id });
+    return c.status(202);
   },
 );
 export default route;
