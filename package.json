@@ -1,0 +1,21 @@
+{
+  "name": "realtime-game",
+  "module": "index.ts",
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "lefthook": "^1.11.12",
+    "typescript": "^5.8.3"
+  },
+  "private": true,
+  "scripts": {
+    "prepare": "bun lefthook install && bun sync",
+    "dev": "bun --filter=-client|-server dev",
+    "sync": "bun --filter=-client sync",
+    "fix": "bun biome check . --fix --unsafe",
+    "fix:safe": "bun biome check . --fix",
+    "check": "bun check:biome",
+    "check:biome": "bun biome check"
+  },
+  "type": "module",
+  "workspaces": ["client", "server", "share"]
+}

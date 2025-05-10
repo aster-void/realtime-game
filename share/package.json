@@ -1,0 +1,9 @@
+{
+  "name": "-share",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "valibot": "^1.1.0"
+  }
+}
