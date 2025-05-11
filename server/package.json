@@ -8,6 +8,7 @@
   },
   "peerDependencies": {},
   "scripts": {
+    "check": "bun tsc --noEmit",
     "dev": "PORT=3000 bun run --env-file=../.env --watch ./index.ts"
   },
   "dependencies": {

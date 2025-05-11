@@ -67,6 +67,15 @@ export const LobbyEvent = union([
     type: literal("ping"),
   }),
   object({
+    type: literal("room create"),
+    room: Room,
+  }),
+  object({
+    type: literal("room update"),
+    id: Uuid,
+    room: Room,
+  }),
+  object({
     type: literal("match success"),
     room: Room,
   }),

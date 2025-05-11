@@ -34,8 +34,21 @@ export class LobbyController {
       switch (ev.type) {
         case "ping":
           break;
+        case "room create": {
+          this.rooms.push(ev.room);
+          break;
+        }
         case "match init": {
           this.matchId = ev.matchId;
+          break;
+        }
+        case "room update": {
+          const roomIndex = this.rooms.findIndex((room) => room.id === ev.id);
+          if (roomIndex === -1) {
+            console.warn("room not found", ev.id);
+            break;
+          }
+          this.rooms[roomIndex] = ev.room;
           break;
         }
         case "match success": {
@@ -76,7 +89,7 @@ export class LobbyController {
         playerName,
       },
     });
-    const { room, player } = await res.json();
+    const { room } = await res.json();
     console.log("created room", room);
     goto(`/rooms/${room.id}`);
   }
@@ -86,11 +99,11 @@ export class LobbyController {
         id: roomId,
       },
       json: {
+        type: "join",
         userName: this.username,
       },
     });
-    // @ts-expect-error
-    const { room, userId }: { room: Room; userId: Uuid } = await res.json();
+    const { room }: { room: Room } = await res.json();
     goto(`/rooms/${room.id}`);
   }
 }

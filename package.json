@@ -3,6 +3,7 @@
   "module": "index.ts",
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
+    "daisyui": "^5.0.35",
     "lefthook": "^1.11.12",
     "typescript": "^5.8.3"
   },
@@ -16,7 +17,7 @@
     "sync": "bun --filter='./client' sync",
     "fix": "bun biome check . --fix --unsafe",
     "fix:safe": "bun biome check . --fix",
-    "check": "bun check:biome",
+    "check": "bun check:biome && bun check --filter='./client' && bun check --filter='./server'",
     "check:biome": "bun biome check"
   },
   "type": "module",

@@ -1,6 +1,7 @@
 import { type Room, Uuid } from "@repo/share/types";
 import { Hono } from "hono";
-import { get, writable } from "svelte/store";
+import { HTTPException } from "hono/http-exception";
+import { get } from "svelte/store";
 import * as v from "valibot";
 import { rooms } from "../state";
 import { param } from "../validator";
@@ -8,7 +9,8 @@ import { json } from "../validator";
 
 const route = new Hono()
   .get("/", (c) => {
-    return c.json(rooms.map(get));
+    const data = rooms.current;
+    return c.json(data);
   })
   .get(
     "/:id",
@@ -17,11 +19,8 @@ const route = new Hono()
     }),
     async (c) => {
       const param = c.req.valid("param");
-      const room = rooms.find((room) => get(room).id === param.id);
-      if (!room) {
-        return c.notFound();
-      }
-      return c.json(get(room));
+      const idx = rooms.findIndex((room) => room.id === param.id);
+      return c.json<Room>(rooms.get(idx));
     },
   )
   .post(
@@ -43,7 +42,7 @@ const route = new Hono()
         name: json.roomName,
         players: [player],
       };
-      rooms.push(writable(room));
+      rooms.push(room);
       return c.json({
         room,
         player,
@@ -56,30 +55,60 @@ const route = new Hono()
       id: v.string(),
     }),
     json(
-      v.object({
-        userName: v.string(),
-      }),
+      v.union([
+        v.object({
+          type: v.literal("join"),
+          userName: v.string(),
+        }),
+        v.object({
+          type: v.literal("user rename"),
+          userId: Uuid,
+          userName: v.string(),
+        }),
+      ]),
     ),
     async (c) => {
       const param = c.req.valid("param");
-      const userId: string = crypto.randomUUID();
-      const room = rooms.find((room) => get(room).id === param.id);
-      if (!room) {
-        return c.notFound();
-      }
+      const room = rooms.find((room) => room.id === param.id);
       const json = c.req.valid("json");
-      room.update((room) => {
-        room.players.push({
-          id: userId,
-          name: json.userName,
-        });
-        return room;
-      });
-      const roomData: Room = get(room);
-      return c.json({
-        room: roomData,
-        userId,
-      });
+      switch (json.type) {
+        case "join": {
+          const userId: string = crypto.randomUUID();
+          const idx = rooms.findIndex((room) => room.id === param.id);
+          rooms.update(idx, (room) => {
+            room.players.push({
+              id: userId,
+              name: json.userName,
+            });
+            return room;
+          });
+          const roomData: Room = rooms.get(idx);
+          return c.json({
+            room: roomData,
+            userId,
+          });
+        }
+        case "user rename": {
+          const idx = rooms.findIndex((room) => room.id === param.id);
+          rooms.update(idx, (room) => {
+            const prev = room.players.find(
+              (player) => player.id === json.userId,
+            );
+            if (!prev) {
+              throw new HTTPException(404, {
+                message: "player not found",
+              });
+            }
+            prev.name = json.userName;
+            return room;
+          });
+          const roomData: Room = rooms.get(idx);
+          return c.json({
+            room: roomData,
+            userId: json.userId,
+          });
+        }
+      }
     },
   );
 

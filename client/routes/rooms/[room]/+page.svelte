@@ -1,31 +1,45 @@
 <script lang="ts">
-import { useRoomState } from "~/controller/room.controller.ts";
+import { useDebounce, watch } from "runed";
+import { untrack } from "svelte";
+import { RoomController } from "~/controller/room.controller.svelte.ts";
+
 const { data } = $props();
 
-const _state = useRoomState(data.room);
-const state = $derived($_state);
+const roomState = new RoomController(data.room);
+
+let usernameInput = $state("");
+watch(
+  () => usernameInput,
+  (username) => {
+    console.log("updating user name");
+    untrack(() => {
+      roomState.updateUsername(username);
+    });
+  },
+);
 </script>
 
 <div class="container">
   <!-- Room Header -->
   <header class="room-header">
-    <h1>{state.room?.name || "Loading..."}</h1>
+    <h1>{roomState.state?.room?.name || "Loading..."}</h1>
     <div class="status-indicator">
-      <span class="status-dot {state.status}"></span>
-      <span class="status-text">{state.status}</span>
+      <span class="status-dot {roomState.state?.status}"></span>
+      <span class="status-text">{roomState.state?.status}</span>
     </div>
   </header>
 
+  <div>
+    your name:
+    <input type="text" bind:value={usernameInput} />
+  </div>
   <!-- Players List -->
   <section class="players-list">
-    <h2>Players ({state.room?.players?.length || 0})</h2>
+    <h2>Players ({roomState.state?.room?.players?.length || 0})</h2>
     <ul>
-      {#if state.room?.players}
-        {#each state.room.players as player}
+      {#if roomState.state?.room?.players}
+        {#each roomState.state.room.players as player}
           <li class="player-item">
-            <div class="player-avatar">
-              <img src="avatar-placeholder.png" alt="{player.name}'s avatar" />
-            </div>
             <div class="player-info">
               <h3>{player.name}</h3>
               <p class="player-id">#{player.id}</p>
@@ -40,8 +54,11 @@ const state = $derived($_state);
 
   <!-- Room Actions -->
   <section class="room-actions">
-    {#if state.status === 'waitroom'}
-      <button class="start-game" disabled={state.room?.players?.length < 2}>
+    {#if roomState.state?.status === "waitroom"}
+      <button
+        class="start-game"
+        disabled={roomState.state?.room?.players?.length < 2}
+      >
         Start Game
       </button>
     {/if}
@@ -53,7 +70,10 @@ const state = $derived($_state);
     max-width: 800px;
     margin: 0 auto;
     padding: 2rem;
-    font-family: system-ui, -apple-system, sans-serif;
+    font-family:
+      system-ui,
+      -apple-system,
+      sans-serif;
   }
 
   .room-header {
@@ -78,9 +98,15 @@ const state = $derived($_state);
     display: inline-block;
   }
 
-  .status-dot.waitroom { background-color: #4CAF50; }
-  .status-dot.matching { background-color: #2196F3; }
-  .status-dot.game { background-color: #F44336; }
+  .status-dot.waitroom {
+    background-color: #4caf50;
+  }
+  .status-dot.matching {
+    background-color: #2196f3;
+  }
+  .status-dot.game {
+    background-color: #f44336;
+  }
 
   .players-list {
     margin-bottom: 2rem;
@@ -133,7 +159,7 @@ const state = $derived($_state);
   }
 
   .start-game {
-    background-color: #4CAF50;
+    background-color: #4caf50;
     color: white;
   }
 
