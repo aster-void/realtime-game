@@ -1,8 +1,6 @@
 <script lang="ts">
-import { goto } from "$app/navigation";
 import { RoomController } from "~/controller/room.controller.svelte.ts";
 
-import { untrack } from "svelte";
 import PlayerList from "~/components/PlayerList.svelte";
 // Components
 import RoomHeader from "~/components/RoomHeader.svelte";
@@ -14,47 +12,13 @@ type Props = {
 let { roomController }: Props = $props();
 const room = $derived(roomController.state);
 const status = $derived(room?.status);
-
-let playerName = $state("");
-$effect(() => {
-  playerName;
-  untrack(() => {
-    roomController.updateUsername(playerName);
-  });
-});
 </script>
 {#if status?.type === "waitroom" && room}
 <div class="min-h-screen bg-base-200">
-  <!-- Navigation -->
-  <div class="navbar bg-base-100 shadow-lg px-4">
-    <div class="flex-1">
-      <button type="button" class="btn btn-ghost text-xl" onclick={() => goto('/')}>
-        <span class="text-primary">Realtime</span>
-        <span class="text-accent">Game</span>
-      </button>
-    </div>
-    <div class="flex-none gap-2">
-      <div class="dropdown dropdown-end">
-        <div tabindex="0" role="button" class="btn btn-ghost">
-          <div class="w-10 rounded-full">
-            <div class="avatar placeholder">
-              <div class="bg-neutral text-neutral-content rounded-full w-8">
-                <span class="text-xs">
-                    {status?.players?.length}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Main Content -->
-  <div class="container mx-auto p-4">
+  <main class="container mx-auto p-4">
     <RoomHeader
       room={room}
-      bind:playerName
+      onPlayerNameChange={(name) => roomController.updateUsername(name)}
     />
 
     <div class="grid grid-cols-1 lg:col-span-3 gap-6">
@@ -62,6 +26,7 @@ $effect(() => {
       <div class="lg:col-span-1">
         <PlayerList 
           room={room}
+          loading={roomController.processing}
           onStartGame={() => roomController.startGame()}
         />
       </div>
@@ -82,7 +47,7 @@ $effect(() => {
         </div>
       </div>
     </div>
-  </div>
+  </main>
 </div>
 
 {/if}

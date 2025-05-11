@@ -2,10 +2,11 @@
 import type { Room } from "@repo/share/types";
 
 type Props = {
+  loading: boolean;
   room: Room;
   onStartGame: () => void;
 };
-const { room, onStartGame }: Props = $props();
+const { room, onStartGame, loading }: Props = $props();
 </script>
 
 <div class="card bg-base-100 shadow-xl h-full">
@@ -49,7 +50,7 @@ const { room, onStartGame }: Props = $props();
       <div class="card-actions justify-end mt-4">
         <button
           class="btn btn-primary w-full"
-          disabled={room.status.players.length < 2}
+          disabled={room.status.players.length < 2 || loading}
           onclick={onStartGame}
         >
           { room.status.players.length < 2 

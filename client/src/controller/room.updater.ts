@@ -20,19 +20,6 @@ export function onServerEvent(state: Room, ev: RoomEvent): Room {
       }
       return state;
     }
-    case "next stage": {
-      if (state.status.type !== "playing") {
-        console.warn("wrong event type: expected playing, got", state);
-        return state;
-      }
-      const stage = ev.stage;
-      for (let i = 0; i < state.status.players.length; i++) {
-        if (stage.dead.includes(state.status.players[i].id)) {
-          state.status.players[i].dead = true;
-        }
-      }
-      return state;
-    }
     case "end": {
       if (state.status.type !== "playing") {
         console.warn("wrong event type: expected playing, got", state);

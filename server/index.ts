@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { env } from "./lib/lib.ts";
+import { env } from "./lib/index.ts";
 import matcherRoute from "./routes/matcher.ts";
 import roomsRoute from "./routes/rooms.ts";
 import streamRoute from "./routes/stream.ts";

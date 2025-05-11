@@ -5,4 +5,4 @@ import type { PageProps } from "./$types";
 const { data }: PageProps = $props();
 </script>
 
-<Lobby defaultRooms={data.rooms} />
+<Lobby defaultRooms={data.rooms}/>

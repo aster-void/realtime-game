@@ -3,6 +3,7 @@ import { LobbyEvent, type Room, type Uuid } from "@repo/share/types";
 import type { Client, Fetch } from "~/api/client.ts";
 import { createClient } from "~/api/client.ts";
 import { API_ENDPOINT } from "~/api/client.ts";
+import { useGlobal } from "~/controller/global.svelte.ts";
 import { useEventSource } from "../lib/useEventSource.ts";
 
 export type LobbyState =
@@ -13,12 +14,12 @@ export type LobbyState =
     }; // the state "ready" does not exist because as soon as the match is successful, the user is redirected to the room
 
 export class LobbyController {
+  global = useGlobal();
   current = $state<LobbyState>({
     type: "idle",
   });
-  username = $state<string>("");
+  processing = $state(false);
   rooms = $state<Room[]>([]);
-  private matchId: Uuid | null = null;
   private client: Client;
 
   constructor({
@@ -30,81 +31,113 @@ export class LobbyController {
   }) {
     this.client = createClient({ fetch });
     this.rooms = defaultRooms; // TODO: update rooms based on events
-    useEventSource(`${API_ENDPOINT}/stream/lobby`, LobbyEvent, (ev) => {
-      console.log("LobbyEvent", ev);
-      switch (ev.type) {
-        case "ping":
-          break;
-        case "room create": {
-          this.rooms.push(ev.room);
-          break;
-        }
-        case "match init": {
-          this.matchId = ev.matchId;
-          break;
-        }
-        case "room update": {
-          const roomIndex = this.rooms.findIndex((room) => room.id === ev.id);
-          if (roomIndex === -1) {
-            console.warn("room not found", ev.id);
+    useEventSource(
+      `${API_ENDPOINT}/stream/lobby?userId=${this.global.userId}`,
+      LobbyEvent,
+      (ev) => {
+        switch (ev.type) {
+          case "ping":
+            break;
+          case "room create": {
+            this.rooms.push(ev.room);
             break;
           }
-          this.rooms[roomIndex] = ev.room;
-          break;
-        }
-        case "match success": {
-          if (this.current.type !== "matching") {
-            console.warn(
-              "wrong event type: expected matching, got",
-              this.current,
-            );
-            return;
+          case "room update": {
+            const roomIndex = this.rooms.findIndex((room) => room.id === ev.id);
+            if (roomIndex === -1) {
+              console.warn("room not found", ev.id);
+              break;
+            }
+            this.rooms[roomIndex] = ev.room;
+            break;
           }
-          goto(`/rooms/${ev.room.id}`);
-          break;
+          case "match success": {
+            if (this.current.type !== "matching") {
+              console.warn(
+                "wrong event type: expected matching, got",
+                this.current,
+              );
+              return;
+            }
+            goto(`/rooms/${ev.room.id}`);
+            break;
+          }
+          default: {
+            console.warn("unknown event type", ev satisfies never);
+            break;
+          }
         }
-        default: {
-          console.warn("unknown event type", ev satisfies never);
-          break;
-        }
-      }
+      },
+    );
+  }
+  process<T>(fn: () => Promise<T>) {
+    this.processing = true;
+    return fn().finally(() => {
+      this.processing = false;
     });
   }
 
-  async requestRandomMatch() {
-    if (!this.matchId) {
-      console.error("match id has not been initialized");
-      return;
-    }
-    await this.client.matcher.$post({
-      json: {
-        id: this.matchId,
-      },
+  requestRandomMatch() {
+    return this.process(async () => {
+      const matchId = crypto.randomUUID();
+      await this.client.matcher[":id"].$put({
+        param: {
+          id: matchId,
+        },
+      });
+      this.current = {
+        type: "matching",
+        matchId,
+      };
     });
   }
-  async createRoom(roomName: string) {
-    const playerName = "aster"; // TODO: get from user
-    const res = await this.client.rooms.$post({
-      json: {
-        roomName,
-        playerName,
-      },
+  cancelMatch() {
+    return this.process(async () => {
+      if (this.current.type !== "matching") {
+        console.error("match id has not been initialized");
+        return;
+      }
+      await this.client.matcher[":id"].$delete({
+        param: {
+          id: this.current.matchId,
+        },
+      });
+      this.current = {
+        type: "idle",
+      };
     });
-    const { room } = await res.json();
-    console.log("created room", room);
-    goto(`/rooms/${room.id}`);
   }
-  async joinRoom(roomId: Uuid) {
-    const res = await this.client.rooms[":id"].$patch({
-      param: {
-        id: roomId,
-      },
-      json: {
-        type: "join",
-        userName: this.username,
-      },
+  createRoom(roomName: string) {
+    return this.process(async () => {
+      const res = await this.client.rooms.$post({
+        json: {
+          roomName,
+          player: {
+            id: this.global.userId,
+            name: this.global.username,
+          },
+        },
+      });
+      const { room } = await res.json();
+      await goto(`/rooms/${room.id}`);
     });
-    const { room }: { room: Room } = await res.json();
-    goto(`/rooms/${room.id}`);
+  }
+  joinRoom(roomId: Uuid) {
+    return this.process(async () => {
+      const res = await this.client.rooms[":id"].$patch({
+        param: {
+          id: roomId,
+        },
+        json: {
+          type: "join",
+          player: {
+            id: this.global.userId,
+            name: this.global.username,
+          },
+        },
+      });
+      const { room }: { room: Room } = await res.json();
+      await goto(`/rooms/${room.id}`);
+    });
   }
 }

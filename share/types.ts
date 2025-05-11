@@ -70,12 +70,6 @@ export const RoomEvent = union([
     action: ActionEvent,
   }),
   object({
-    type: literal("next stage"),
-    stage: object({
-      dead: array(Uuid),
-    }),
-  }),
-  object({
     type: literal("end"),
     winner: object({
       id: Uuid,
@@ -101,9 +95,5 @@ export const LobbyEvent = union([
   object({
     type: literal("match success"),
     room: Room,
-  }),
-  object({
-    type: literal("match init"),
-    matchId: Uuid,
   }),
 ]);

@@ -1,11 +1,20 @@
 <script lang="ts">
 import type { Room } from "@repo/share/types";
+import { untrack } from "svelte";
+import { useGlobal } from "~/controller/global.svelte";
 
 type Props = {
   room: Room;
-  playerName: string;
+  onPlayerNameChange: (name: string) => void;
 };
-let { room, playerName = $bindable() }: Props = $props();
+let { room, onPlayerNameChange }: Props = $props();
+const global = useGlobal();
+$effect(() => {
+  global.username;
+  untrack(() => {
+    onPlayerNameChange(global.username);
+  });
+});
 </script>
 
 <div class="card bg-base-100 shadow-xl mb-6">
@@ -13,7 +22,7 @@ let { room, playerName = $bindable() }: Props = $props();
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
       <div class="flex-1">
         <h1 class="card-title text-2xl md:text-3xl font-bold">
-          {room.name || "Loading..."}
+          {room.name}
           <div class="badge badge-lg ml-2">
             {room.status.type}
           </div>
@@ -28,7 +37,7 @@ let { room, playerName = $bindable() }: Props = $props();
             <span class="label-text">Your Name</span>
             <input 
               type="text" 
-              bind:value={playerName}
+              bind:value={global.username}
               class="input input-bordered w-full" 
               placeholder="Enter your name"
             />

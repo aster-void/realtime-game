@@ -4,52 +4,66 @@ import { useDebounce } from "runed";
 import { onMount } from "svelte";
 import { untrack } from "svelte";
 import { API_ENDPOINT, createClient } from "~/api/client.ts";
+import { useGlobal } from "~/controller/global.svelte";
 import { useEventSource } from "../lib/useEventSource.ts";
 import { onServerEvent } from "./room.updater.ts";
 
 export class RoomController {
   private api = createClient({ fetch });
-  state: Room | undefined = $state();
-  userId: Uuid | undefined = $state();
-
-  startGame = () => {
-    if (!this.state) return;
-    this.api.rooms[":id"].$patch({
-      param: {
-        id: this.state.id,
-      },
-      json: {
-        type: "start game",
-      },
+  private global = useGlobal();
+  state = $state<Room>();
+  processing = $state(false);
+  process<T>(fn: () => Promise<T>) {
+    this.processing = true;
+    return fn().finally(() => {
+      this.processing = false;
     });
-  };
+  }
+  startGame() {
+    return this.process(async () => {
+      if (!this.state) return;
+      await this.api.rooms[":id"].$patch({
+        param: {
+          id: this.state.id,
+        },
+        json: {
+          type: "start game",
+        },
+      });
+    });
+  }
 
   action(action: Hand) {
-    if (!this.state || !this.userId) return;
-    this.api.rooms[":id"].actions.$post({
-      param: {
-        id: this.state.id,
-      },
-      json: {
-        action,
-        userId: this.userId,
-      },
+    return this.process(async () => {
+      if (!this.state) return;
+      await this.api.rooms[":id"].actions.$post({
+        param: {
+          id: this.state.id,
+        },
+        json: {
+          action,
+          userId: this.global.userId,
+        },
+      });
     });
   }
 
   #updateUsername = useDebounce((username: string) => {
-    if (!this.userId || !this.state) return;
-    this.api.rooms[":id"].$patch({
-      param: {
-        id: this.state.id,
-      },
-      json: {
-        type: "user rename",
-        userId: this.userId,
-        userName: username,
-      },
+    return this.process(async () => {
+      if (!this.state) return;
+      if (username.trim().length === 0) return;
+      await this.api.rooms[":id"].$patch({
+        param: {
+          id: this.state.id,
+        },
+        json: {
+          type: "user rename",
+          userId: this.global.userId,
+          userName: username,
+        },
+      });
     });
-  }, 1000);
+  }, 200);
 
   updateUsername = (name: string) => untrack(() => this.#updateUsername(name));
 
@@ -61,7 +75,7 @@ export class RoomController {
         `${API_ENDPOINT}/stream/rooms/${room.id}`,
         RoomEvent,
         (ev) => {
-          if (!this.state) return; // something went wrong
+          if (!this.state) return;
           this.state = onServerEvent(this.state, ev);
         },
       );

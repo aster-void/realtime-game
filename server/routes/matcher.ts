@@ -1,25 +1,33 @@
 import { Uuid } from "@repo/share/types";
 import { Hono } from "hono";
-import * as v from "valibot";
-import { matchingUsers } from "../state";
-import { json } from "../validator";
+import { matcher } from "../model/matcher.ts";
+import { param } from "../validator.ts";
 
-const route = new Hono().post(
-  "/",
-  json(
-    v.object({
+const route = new Hono()
+  .put(
+    "/:id",
+    param({
       id: Uuid,
     }),
-  ),
-  async (c) => {
-    const json = c.req.valid("json");
-    const id = json.id;
+    async (c) => {
+      const param = c.req.valid("param");
+      const id = param.id;
 
-    matchingUsers.update((users) => {
-      users.push(id);
-      return users;
-    });
-    return c.status(202);
-  },
-);
+      matcher.register(id);
+      return c.status(202);
+    },
+  )
+  .delete(
+    "/:id",
+    param({
+      id: Uuid,
+    }),
+    async (c) => {
+      const param = c.req.valid("param");
+      const id = param.id;
+
+      matcher.unregister(id);
+      return c.status(202);
+    },
+  );
 export default route;
