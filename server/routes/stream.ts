@@ -2,9 +2,9 @@ import type { LobbyEvent, RoomEvent } from "@repo/share/types.ts";
 import { Uuid } from "@repo/share/types.ts";
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
+import { param, query } from "../lib/validator.ts";
 import { lobby } from "../model/lobby.ts";
 import { rooms } from "../model/rooms.ts";
-import { param, query } from "../validator.ts";
 
 const route = new Hono()
   .get(

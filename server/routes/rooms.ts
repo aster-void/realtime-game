@@ -3,10 +3,10 @@ import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import * as v from "valibot";
 import { unwrap } from "../lib/index.ts";
+import { param } from "../lib/validator.ts";
+import { json } from "../lib/validator.ts";
 import { resolve } from "../logic/hands.ts";
 import { rooms } from "../model/rooms.ts";
-import { param } from "../validator.ts";
-import { json } from "../validator.ts";
 
 const route = new Hono()
   .get("/", (c) => {

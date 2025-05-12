@@ -1,7 +1,7 @@
 import { Uuid } from "@repo/share/types";
 import { Hono } from "hono";
+import { param } from "../lib/validator.ts";
 import { matcher } from "../model/matcher.ts";
-import { param } from "../validator.ts";
 
 const route = new Hono()
   .put(
