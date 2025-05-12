@@ -2,3 +2,9 @@ node_modules
 .env
 .direnv
 .svelte-kit
+.logs/*
+!.logs/.gitkeep
+
+# vite
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*

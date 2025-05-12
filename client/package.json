@@ -14,7 +14,7 @@
   },
   "private": true,
   "scripts": {
-    "dev": "bun run --env-file=../.env vite dev",
+    "dev": "bun run --env-file=../.env vite dev 2>../.logs/client.log",
     "build": "bun run --env-file=../.env vite build",
     "preview": "vite preview",
     "sync": "svelte-kit sync",

@@ -9,8 +9,8 @@
   },
   "peerDependencies": {},
   "scripts": {
-    "check": "bun tsc --noEmit",
-    "dev": "PORT=3000 bun run --env-file=../.env --watch ./index.ts"
+    "dev": "PORT=3000 bun run --env-file=../.env --watch ./index.ts 2>../.logs/server.log",
+    "check": "bun tsc --noEmit"
   },
   "dependencies": {
     "@repo/share": "workspace:share",
