@@ -1,3 +1,4 @@
+import { BroadcastChannel } from "node:worker_threads";
 import * as v from "valibot";
 
 export function post<T>(path: string, data: T) {
@@ -12,17 +13,14 @@ export function listen<T>(
   onMessage: (message: T) => void,
 ) {
   const bc = new BroadcastChannel(path);
-  bc.onmessage = (ev) => {
-    const parseRes = v.safeParse(schema, ev.data);
+  bc.onmessage = (ev: unknown) => {
+    const data = (ev as MessageEvent<unknown>).data;
+    const parseRes = v.safeParse(schema, data);
     if (!parseRes.success) {
-      console.warn(
-        "[warn] failed to parse room event",
-        ev.data,
-        "for error:",
-        parseRes.issues,
-      );
+      console.warn("[warn] failed to parse room event", data);
+      return;
     }
-    onMessage(ev.data);
+    onMessage(parseRes.output);
   };
   return () => {
     bc.close();

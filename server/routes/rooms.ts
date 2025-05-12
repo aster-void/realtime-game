@@ -100,7 +100,10 @@ const route = new Hono()
           room.status = {
             type: "playing",
             submitted: [],
-            players: room.status.players,
+            players: result.players.map((player) => ({
+              ...player,
+              action: null,
+            })),
           };
           return room;
         }

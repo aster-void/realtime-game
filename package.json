@@ -17,7 +17,7 @@
     "sync": "bun --filter='./client' sync",
     "fix": "bun biome check . --fix --unsafe",
     "fix:safe": "bun biome check . --fix",
-    "check": "bun check:biome && bun check --filter='./client' && bun check --filter='./server'",
+    "check": "bun check:biome && (cd client && bun check) && (cd server && bun check)",
     "check:biome": "bun biome check"
   },
   "type": "module",
