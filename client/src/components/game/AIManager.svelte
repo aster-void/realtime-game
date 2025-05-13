@@ -16,12 +16,12 @@ const { aiPlayers, room }: Props = $props();
         <form onsubmit={(e) => {
           e.preventDefault();
           room.addAI();
-        }}>
+        }} class="flex items-center gap-2">
           <input
             type="text"
             bind:value={room.aiName}
             placeholder="AI Player Name"
-            class="input input-bordered flex-1"
+            class="input input-bordered"
           />
           <button 
             class="btn btn-primary"

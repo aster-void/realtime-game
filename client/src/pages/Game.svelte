@@ -1,27 +1,27 @@
 <script lang="ts">
-import { goto } from "$app/navigation";
+import type { Player } from "@repo/share/types";
 import { RoomController } from "~/controller/room.controller.svelte.ts";
 
+import AIList from "~/components/game/AIManager.svelte";
+import Actions from "~/components/game/Actions.svelte";
+import PlayerList from "~/components/game/PlayerList.svelte";
 // Components
-import RoomHeader from "~/components/RoomHeader.svelte";
-import { useGlobal } from "~/controller/global.svelte";
-import { hands } from "~/lib/hands.ts";
+import RoomHeader from "~/components/game/RoomHeader.svelte";
 
 type Props = {
   room: RoomController;
 };
 
-const { room }: Props = $props();
-const global = useGlobal();
+let { room }: Props = $props();
 
-function handleLeaveGame() {
-  goto("/");
-}
+// AI Player Management
+const aiPlayers = $derived(
+  room.players.filter((p): p is Player & { isAI: true } => p.isAI === true),
+);
 </script>
-
 {#if room}
-  <!-- Main Content -->
-  <div class="container mx-auto p-4">
+<div class="min-h-screen bg-base-200">
+  <main class="container mx-auto p-4">
     <RoomHeader
       room={room}
       onPlayerNameChange={(name) => room.updateUsername(name)}
@@ -29,60 +29,57 @@ function handleLeaveGame() {
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <!-- Left Column - Players List -->
-      <div class="lg:col-span-1">
-        <div class="card bg-base-100 shadow-xl h-full">
-          <div class="card-body">
-            <h2 class="card-title">Players</h2>
-            <div class="space-y-2">
-              {#each room.players as player}
-                <div class="flex items-center gap-3 p-2 rounded-lg {player.dead ? 'bg-error/10' : player.id === global.userId ? 'bg-primary/10' : ''}">
-                  <div class="flex-1">
-                    <div class="font-medium">{player.name}</div>
-                    <div class="text-xs opacity-70">{player.id?.slice(0, 6)}</div>
-                  </div>
-                  <div class="badge badge-primary">{player.action || "Waiting"}</div>
-                  {#if player.dead}
-                    <div class="badge badge-error">Dead</div>
-                  {:else if room.state?.status.type === "end" && player.id === room.state?.status.winner?.id}
-                    <div class="badge badge-success">Win!</div>
-                  {/if}
-                </div>
-                {/each}
-            </div>
-            
-            <div class="mt-4">
-              <button 
-                class="btn btn-outline btn-error w-full"
-                onclick={handleLeaveGame}
-              >
-                Leave Game
-              </button>
-            </div>
-          </div>
-        </div>
+      <div>
+        <PlayerList
+          room={room}
+        />
       </div>
 
-      <div class="lg:col-span-2">
-        <div class="card bg-base-100 shadow-xl h-full">
-          <div class="card-body">
-            <h2 class="card-title">Action</h2>
-            <div class="space-y-2">
-              {#each hands as hand}
-                <button
-                  class="btn btn-outline"
-                  disabled={room.processing || room.me?.action != null || room.me?.dead}
-                  onclick={() => {
-                    room.action(hand)
-                  }}
-                >
-                  {hand}
-                </button>
-              {/each}             
-            </div>
+      <!-- Middle Column - Game Controls -->
+      <div class="card bg-base-100 shadow-xl">
+        <div class="card-body">
+
+    {#if room.state?.status.type === "waitroom"}
+    <div class="card-actions justify-end mt-4">
+      <button
+        class="btn btn-primary w-full"
+        disabled={room.players.length < 2 || room.processing}
+        onclick={() => room.startGame()}
+      >
+        { room.players.length < 2 
+          ? `Need ${2 - room.players.length} more to start` 
+          : 'Start Game'}
+      </button>
+    </div>
+  {/if}
+
+        {#if room.state?.status.type === "playing"}
+          <Actions
+            onaction={(hand) => room.action(hand)}
+            disabled={room.processing || room.me?.action != null || room.me?.dead}
+          />
+        {/if}
+        {#if room.state?.status.type === "end"}
+          <div class="text-center py-8">
+            <p class="text-2xl font-bold">👑 {room.state?.status.winner.name}</p>
           </div>
+          <div class="card-actions justify-end mt-4">
+            <button
+              class="btn btn-primary btn-outline w-full"
+              onclick={() => room.startGame()}
+            >
+              Play Again
+            </button>
+          </div>
+        {/if}
         </div>
+      </div>
+      <!-- Right Column - AI Player Controls -->
+      <div>
+        <AIList aiPlayers={aiPlayers} room={room} />
       </div>
     </div>
-  </div>
-{/if}
+  </main>
+</div>
 
+{/if}

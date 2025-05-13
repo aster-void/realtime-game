@@ -1,6 +1,7 @@
 # General
 - Prefer minimal code.
 - Use blank lines to separate logical blocks of code. Use them sparingly.
+- Take care of performance. especially, memory usage.
 
 # Comments & Documentation
 - Use English for all code and documentation.
@@ -28,3 +29,7 @@
 - Use tagged union types for values that can take only one of several shapes.
 - Prefer immutability for data.
 - Don't overuse immutability: it can hurt memory usage and performance.
+
+# HTML
+- Prefer DaisyUI if it's available.
+- Avoid nesting too many divs.
