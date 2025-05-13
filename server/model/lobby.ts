@@ -1,5 +1,5 @@
 import { LobbyEvent } from "@repo/share/types";
-import * as proto from "./proto.ts";
+import * as proto from "./_proto.ts";
 
 export namespace lobby {
   export function notify(message: LobbyEvent, id?: string) {

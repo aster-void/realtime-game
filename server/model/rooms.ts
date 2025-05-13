@@ -1,8 +1,8 @@
 import { type Room, RoomEvent } from "@repo/share/types";
 import { HTTPException } from "hono/http-exception";
 import * as v from "valibot";
+import * as proto from "./_proto.ts";
 import { lobby } from "./lobby.ts";
-import * as proto from "./proto.ts";
 
 const _rooms = <Room[]>[];
 
