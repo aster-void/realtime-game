@@ -1,9 +1,11 @@
-import { type Room, RoomEvent } from "@repo/share/types";
+import { type Hand, type Room, RoomEvent, type Uuid } from "@repo/share/types";
 import { HTTPException } from "hono/http-exception";
-import * as v from "valibot";
+import { unwrap } from "../lib/index.ts";
+import * as ai from "../logic/ai.ts";
+import { resolve } from "../logic/hands.ts";
+import { isAllSettled } from "../logic/room.ts";
 import * as proto from "./_proto.ts";
 import { lobby } from "./lobby.ts";
-
 const _rooms = <Room[]>[];
 
 export namespace rooms {
@@ -64,6 +66,75 @@ export namespace rooms {
     set(id, room);
     return room;
   };
+
+  export function makeMove(roomId: Uuid, playerId: Uuid, action: Hand): Room {
+    return rooms.update(roomId, (room) => {
+      if (room.status.type !== "playing") {
+        throw new HTTPException(400, {
+          message: "room is not playing",
+        });
+      }
+      const player = room.status.players.find(
+        (player) => player.id === playerId,
+      );
+      if (!player) {
+        throw new HTTPException(404, {
+          message: "player not found",
+        });
+      }
+      if (player.action) {
+        throw new HTTPException(400, {
+          message: "player already made a move",
+        });
+      }
+      player.action = action;
+
+      if (!isAllSettled(room.status.players)) {
+        return room;
+      }
+
+      const result = resolve(room.status.players);
+      if (result.status === "end") {
+        setTimeout(() => {
+          rooms.update(roomId, (room) => {
+            room.status = {
+              type: "end",
+              winner: unwrap(
+                room.status.players.find((player) => !player.dead),
+              ),
+              players: room.status.players,
+            };
+            return room;
+          });
+        }, 500);
+        return room;
+      }
+      setTimeout(() => {
+        rooms.update(roomId, (room) => {
+          room.status = {
+            type: "playing",
+            submitted: [],
+            players: room.status.players.map((player) => ({
+              ...player,
+              action: player.dead ? player.action : null,
+            })),
+          };
+          planAIMoves(roomId);
+          return room;
+        });
+      }, 500);
+      return room;
+    });
+  }
+  export function planAIMoves(roomId: Uuid) {
+    ai.planAIMoves(
+      rooms.findById(roomId).status.players,
+      1500,
+      (playerId, action) => {
+        rooms.makeMove(roomId, playerId, action);
+      },
+    );
+  }
 
   // pub / sub methods
   export const notify = (id: string, message: RoomEvent): void => {

@@ -1,6 +1,7 @@
 <script lang="ts">
 import { RoomController } from "~/controller/room.controller.svelte.ts";
 import Game from "~/pages/Game.svelte";
+import GameEnd from "~/pages/GameEnd.svelte";
 import WaitRoom from "~/pages/WaitRoom.svelte";
 
 const { data } = $props();
@@ -9,7 +10,11 @@ $inspect(roomController.state);
 </script>
 
 {#if roomController.state?.status.type === 'waitroom'}
-  <WaitRoom roomController={roomController} />
+  <WaitRoom room={roomController} />
+{:else if roomController.state?.status.type === 'playing'}
+  <Game room={roomController} />
+{:else if roomController.state?.status.type === 'end'}
+  <GameEnd room={roomController} />
 {:else}
-  <Game roomController={roomController} />
+  <div>Game not found</div>
 {/if}

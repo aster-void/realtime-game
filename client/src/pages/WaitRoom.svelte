@@ -8,43 +8,37 @@ import AIList from "~/components/waitroom/AIManager.svelte";
 import PlayerManager from "~/components/waitroom/PlayerManager.svelte";
 
 type Props = {
-  roomController: RoomController;
+  room: RoomController;
 };
 
-let { roomController }: Props = $props();
-const room = $derived(roomController.state);
-const status = $derived(room?.status);
+let { room }: Props = $props();
 
 // AI Player Management
 const aiPlayers = $derived(
-  status?.type === "waitroom"
-    ? status.players.filter(
-        (p): p is Player & { isAI: true } => p.isAI === true,
-      )
-    : [],
+  room.players.filter((p): p is Player & { isAI: true } => p.isAI === true),
 );
 </script>
-{#if status?.type === "waitroom" && room}
+{#if room}
 <div class="min-h-screen bg-base-200">
   <main class="container mx-auto p-4">
     <RoomHeader
       room={room}
-      onPlayerNameChange={(name) => roomController.updateUsername(name)}
+      onPlayerNameChange={(name) => room.updateUsername(name)}
     />
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 lg:col-span-3 gap-6">
       <!-- Left Column - Players List -->
       <div class="lg:col-span-1">
         <PlayerManager 
           room={room}
-          loading={roomController.processing}
-          onStartGame={() => roomController.startGame()}
+          loading={room.processing}
+          onStartGame={() => room.startGame()}
         />
       </div>
 
       <!-- Middle Column - Game Controls -->
       <div class="lg:col-span-2">
-        <AIList aiPlayers={aiPlayers} room={roomController} />
+        <AIList aiPlayers={aiPlayers} room={room} />
         <div class="card bg-base-100 shadow-xl">
           <div class="card-body">
             <h2 class="card-title">Game Information</h2>

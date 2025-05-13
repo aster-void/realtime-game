@@ -2,8 +2,9 @@ import type { Player } from "@repo/share/types";
 
 const hands = ["グー", "チョキ", "パー"];
 export function resolve(players: Player[]) {
+  const alive = players.filter((player) => !player.dead);
   // If players have at least one of each hand, the game continues.
-  if (hands.every((hand) => players.some((player) => player.action === hand))) {
+  if (hands.every((hand) => alive.some((player) => player.action === hand))) {
     return {
       status: "continue",
       players,
@@ -11,7 +12,7 @@ export function resolve(players: Player[]) {
   }
   // If all players have the same hand, the game continues.
   for (const hand of hands) {
-    if (players.every((player) => player.action === hand)) {
+    if (alive.every((player) => player.action === hand)) {
       return {
         status: "continue",
         players,
@@ -21,8 +22,8 @@ export function resolve(players: Player[]) {
   for (let i = 0; i < hands.length; i++) {
     const hand = hands[i];
     const next = hands[(i + 1) % hands.length];
-    if (players.some((player) => player.action === hand)) {
-      for (const player of players) {
+    if (alive.some((player) => player.action === hand)) {
+      for (const player of alive) {
         if (player.action === next) {
           player.dead = true;
         }
@@ -30,7 +31,7 @@ export function resolve(players: Player[]) {
     }
   }
   return {
-    status: count(players, (player) => !player.dead) === 1 ? "end" : "continue",
+    status: count(alive, (player) => !player.dead) === 1 ? "end" : "continue",
     players,
   };
 }

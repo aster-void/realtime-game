@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { Room } from "@repo/share/types";
+import type { Player, Room } from "@repo/share/types";
 import { useGlobal } from "~/controller/global.svelte";
 import { LobbyController } from "~/controller/lobby.controller.svelte";
 type Props = {
@@ -10,21 +10,39 @@ let { rooms, lobby }: Props = $props();
 let roomName = $state("");
 
 const global = useGlobal();
+
+function humans(room: Room) {
+  return room.status.players.filter((p): p is Player => p.isAI === false);
+}
+
+function ais(room: Room) {
+  return room.status.players.filter((p): p is Player => p.isAI === true);
+}
 </script>
 
 <div class="w-full max-w-2xl mx-auto mt-4">
     <h2 class="text-2xl font-bold text-center mb-4 text-primary">Available Rooms</h2>
     
-    <div class="space-y-2 bg-base-100 shadow-sm p-4">
+    <ul class="space-y-2 bg-base-100 shadow-sm p-4">
         {#each rooms as room}
-            <div class="card card-compact card-bordered bg-base-100 hover:bg-base-200 transition-colors">
+        {@const humansCount = humans(room).length}
+        {@const aisCount = ais(room).length}
+            <li class="card card-compact card-bordered bg-base-100 hover:bg-base-200 transition-colors">
                 <div class="card-body p-3 flex flex-row items-center justify-between">
-                    <div class="flex items-center space-x-3">
-                        <h3 class="font-medium">{room.name}</h3>
-                        {#if room.status.type !== "end"}
-                            <span class="badge badge-ghost">
-                                {room.status.players.length} {room.status.players.length === 1 ? 'player' : 'players'}
-                            </span>
+                    <h3 class="font-medium grow">{room.name}</h3>
+                    <div class="flex space-x-2">
+                        <span class="badge text-sm">
+                            {humansCount} {humansCount === 1 ? 'player' : 'players'}
+                        </span>
+                        <span class="badge text-sm">
+                            {aisCount} {aisCount === 1 ? 'AI' : 'AIs'}
+                        </span>
+                        {#if room.status.type === "waitroom"}
+                            <span class="badge badge-primary">Waiting</span>
+                        {:else if room.status.type === "playing"}
+                            <span class="badge badge-success">Playing</span>
+                        {:else if room.status.type === "end"}
+                            <span class="badge badge-primary">Ended</span>
                         {/if}
                     </div>
                     <button 
@@ -38,22 +56,20 @@ const global = useGlobal();
                         </svg>
                     </button>
                 </div>
-            </div>
+            </li>
         {:else}
-            <div class="alert alert-info alert-outline">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-info flex-shrink-0 w-5 h-5">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
+            <li class="alert alert-info alert-outline">
+                <img src="/icons/info.svg" alt="Info" class="w-5 h-5">
                 <span class="text-sm">No rooms available. Create one to get started!</span>
-            </div>
+            </li>
         {/each}
 
         <form class="flex items-center gap-2 flex-grow" onsubmit={(e) => {
             e.preventDefault();
             lobby.createRoom(roomName); 
         }}>
-            <input type="text" name="name" required class="input input-bordered" placeholder="Enter room name" bind:value={roomName}/>
+            <input type="text" name="name" required class="input input-bordered grow" placeholder="Enter room name" bind:value={roomName}/>
             <button type="submit" class="btn btn-primary" disabled={roomName.trim() === "" || global.username === ""}>Create</button>
         </form>
-    </div>
+    </ul>
 </div>

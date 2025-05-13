@@ -2,11 +2,8 @@ import { Hand, type Player, type Room, Uuid } from "@repo/share/types";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import * as v from "valibot";
-import { unwrap } from "../lib/index.ts";
 import { param } from "../lib/validator.ts";
 import { json } from "../lib/validator.ts";
-import { createAIPlayer, makeAIMoves } from "../logic/ai.ts";
-import { resolve } from "../logic/hands.ts";
 import { rooms } from "../model/rooms.ts";
 
 const route = new Hono()
@@ -74,47 +71,8 @@ const route = new Hono()
     async (c) => {
       const param = c.req.valid("param");
       const json = c.req.valid("json");
-      rooms.update(param.id, (room): Room => {
-        if (room.status.type !== "playing") {
-          throw new HTTPException(400, {
-            message: "room is not playing",
-          });
-        }
-        const player = room.status.players.find(
-          (player) => player.id === json.userId,
-        );
-        if (!player) {
-          throw new HTTPException(404, {
-            message: "player not found",
-          });
-        }
-        player.action = json.action;
-
-        // Process AI moves after human player's move
-        let updatedPlayers = room.status.players;
-        updatedPlayers = makeAIMoves(updatedPlayers);
-
-        const result = resolve(updatedPlayers);
-        if (result.status === "end") {
-          room.status = {
-            type: "end",
-            winner: unwrap(result.players.find((player) => !player.dead)),
-            players: updatedPlayers,
-          };
-          return room;
-        }
-        room.status = {
-          type: "playing",
-          submitted: [],
-          players: result.players.map((player) => ({
-            ...player,
-            action: null,
-          })),
-        };
-        return room;
-      });
       return c.json({
-        room: rooms.findById(param.id),
+        room: rooms.makeMove(param.id, json.userId, json.action),
       });
     },
   )
@@ -154,11 +112,6 @@ const route = new Hono()
         case "add player": {
           const room = rooms.findById(param.id);
           rooms.update(room.id, (room) => {
-            if (room.status.type !== "waitroom") {
-              throw new HTTPException(400, {
-                message: "room is not waitroom",
-              });
-            }
             if (
               room.status.players.find((player) => player.id === json.player.id)
             ) {
@@ -195,11 +148,6 @@ const route = new Hono()
         }
         case "remove ai": {
           const room = rooms.update(param.id, (room) => {
-            if (room.status.type !== "waitroom") {
-              throw new HTTPException(400, {
-                message: "can only remove AI in waitroom",
-              });
-            }
             room.status.players = room.status.players.filter(
               (player) => !(player.isAI && player.id === json.aiId),
             );
@@ -221,6 +169,7 @@ const route = new Hono()
                 isAI: player.isAI,
               })),
             };
+            rooms.planAIMoves(param.id);
             return room;
           });
           return c.json({

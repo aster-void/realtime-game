@@ -5,6 +5,7 @@ import type { Client, Fetch } from "~/api/client.ts";
 import { createClient } from "~/api/client.ts";
 import { API_ENDPOINT } from "~/api/client.ts";
 import { useGlobal } from "~/controller/global.svelte.ts";
+import { useFetch } from "./_proto";
 
 export type LobbyState =
   | { type: "idle" }
@@ -30,7 +31,7 @@ export class LobbyController {
     defaultRooms: Room[];
   }) {
     this.client = createClient({ fetch });
-    this.rooms = defaultRooms; // TODO: update rooms based on events
+    this.rooms = defaultRooms;
     useEventSource(
       `${API_ENDPOINT}/stream/lobby?userId=${this.global.userId}`,
       LobbyEvent,
@@ -72,72 +73,88 @@ export class LobbyController {
   }
   process<T>(fn: () => Promise<T>) {
     this.processing = true;
-    return fn().finally(() => {
-      this.processing = false;
-    });
+    return fn()
+      .catch((error) => {
+        console.error("Error processing:", error);
+      })
+      .finally(() => {
+        this.processing = false;
+      });
   }
 
   requestRandomMatch() {
     return this.process(async () => {
       const matchId = crypto.randomUUID();
-      await this.client.matcher[":id"].$put({
-        param: {
-          id: matchId,
-        },
-      });
+      await useFetch(() =>
+        this.client.matcher[":id"].$put({
+          param: {
+            id: matchId,
+          },
+        }),
+      );
       this.current = {
         type: "matching",
         matchId,
       };
     });
   }
+
   cancelMatch() {
     return this.process(async () => {
       if (this.current.type !== "matching") {
         console.error("match id has not been initialized");
         return;
       }
-      await this.client.matcher[":id"].$delete({
-        param: {
-          id: this.current.matchId,
-        },
-      });
+      const matchId = this.current.matchId;
+      await useFetch(() =>
+        this.client.matcher[":id"].$delete({
+          param: {
+            id: matchId,
+          },
+        }),
+      );
       this.current = {
         type: "idle",
       };
     });
   }
+
   createRoom(roomName: string) {
     return this.process(async () => {
-      const res = await this.client.rooms.$post({
-        json: {
-          roomName,
-          player: {
-            id: this.global.userId,
-            name: this.global.username,
+      const { room } = await useFetch(() =>
+        this.client.rooms.$post({
+          json: {
+            roomName,
+            player: {
+              id: this.global.userId,
+              name: this.global.username,
+            },
           },
-        },
-      });
-      const { room } = await res.json();
+        }),
+      );
+      if (!room) return;
       await goto(`/rooms/${room.id}`);
     });
   }
+
   joinRoom(roomId: Uuid) {
     return this.process(async () => {
-      const res = await this.client.rooms[":id"].$patch({
-        param: {
-          id: roomId,
-        },
-        json: {
-          type: "add player",
-          player: {
-            id: this.global.userId,
-            name: this.global.username,
-            isAI: false,
+      const { room } = await useFetch(() =>
+        this.client.rooms[":id"].$patch({
+          param: {
+            id: roomId,
           },
-        },
-      });
-      const { room }: { room: Room } = await res.json();
+          json: {
+            type: "add player",
+            player: {
+              id: this.global.userId,
+              name: this.global.username,
+              isAI: false,
+            },
+          },
+        }),
+      );
+      if (!room) return;
       await goto(`/rooms/${room.id}`);
     });
   }

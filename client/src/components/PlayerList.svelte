@@ -1,9 +1,9 @@
 <script lang="ts">
-import type { Room } from "@repo/share/types";
+import type { RoomController } from "~/controller/room.controller.svelte.ts";
 
 type Props = {
   loading: boolean;
-  room: Room;
+  room: RoomController;
   onStartGame: () => void;
 };
 const { room, onStartGame, loading }: Props = $props();
@@ -14,14 +14,14 @@ const { room, onStartGame, loading }: Props = $props();
     <h2 class="card-title">
       Players 
       <div class="badge badge-primary">
-        {room.status.players.length}
+        {room.players.length}
       </div>
     </h2>
     
     <div class="overflow-y-auto max-h-96">
-      {#if room.status.players.length > 0}
+      {#if room.players.length > 0}
         <ul class="menu bg-base-200 rounded-box">
-          {#each room.status.players as player}
+          {#each room.players as player}
             <li>
               <div class="flex justify-between items-center">
                 <div class="flex items-center gap-3">
@@ -41,15 +41,15 @@ const { room, onStartGame, loading }: Props = $props();
       {/if}
     </div>
 
-    {#if room.status.type === "waitroom"}
+    {#if room.state?.status.type === "waitroom"}
       <div class="card-actions justify-end mt-4">
         <button
           class="btn btn-primary w-full"
-          disabled={room.status.players.length < 2 || loading}
+          disabled={room.players.length < 2 || loading}
           onclick={onStartGame}
         >
-          { room.status.players.length < 2 
-            ? `Need ${2 - room.status.players.length} more to start` 
+          { room.players.length < 2 
+            ? `Need ${2 - room.players.length} more to start` 
             : 'Start Game'}
         </button>
       </div>

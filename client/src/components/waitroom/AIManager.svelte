@@ -36,19 +36,15 @@ const { aiPlayers, room }: Props = $props();
           <div class="space-y-2">
             <h3 class="font-medium">AI Players in Room</h3>
             <div class="space-y-2">
-              {#each aiPlayers as player}
+              {#each aiPlayers as ai}
                 <div class="flex justify-between items-center p-2 bg-base-200 rounded">
                   <div class="flex items-center gap-2">
-                    <div class="avatar placeholder">
-                      <div class="bg-neutral text-neutral-content rounded-full w-8">
-                        <span class="text-xs">🤖</span>
-                      </div>
-                    </div>
-                    <span>{player.name}</span>
+                    <span>🤖</span>
+                    <span>{ai.name}</span>
                   </div>
                   <button 
                     class="btn btn-sm btn-error"
-                    onclick={() => room.removeAI(player.id)}
+                    onclick={() => room.removeAI(ai.id)}
                     disabled={room.processing}
                   >
                     Remove

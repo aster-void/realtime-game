@@ -5,13 +5,13 @@ import { RoomController } from "~/controller/room.controller.svelte.ts";
 // Components
 import RoomHeader from "~/components/RoomHeader.svelte";
 import { useGlobal } from "~/controller/global.svelte";
+import { hands } from "~/lib/hands.ts";
 
 type Props = {
-  roomController: RoomController;
+  room: RoomController;
 };
 
-const { roomController }: Props = $props();
-const game = $derived(roomController.state);
+const { room }: Props = $props();
 const global = useGlobal();
 
 function handleLeaveGame() {
@@ -19,12 +19,12 @@ function handleLeaveGame() {
 }
 </script>
 
-{#if game}
+{#if room}
   <!-- Main Content -->
   <div class="container mx-auto p-4">
     <RoomHeader
-      room={game}
-      onPlayerNameChange={(name) => roomController.updateUsername(name)}
+      room={room}
+      onPlayerNameChange={(name) => room.updateUsername(name)}
     />
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -34,20 +34,20 @@ function handleLeaveGame() {
           <div class="card-body">
             <h2 class="card-title">Players</h2>
             <div class="space-y-2">
-              {#each game.status.players as player}
-                <div class="flex items-center gap-3 p-2 rounded-lg {player.id === global.userId ? 'bg-primary/10' : ''}">
+              {#each room.players as player}
+                <div class="flex items-center gap-3 p-2 rounded-lg {player.dead ? 'bg-error/10' : player.id === global.userId ? 'bg-primary/10' : ''}">
                   <div class="flex-1">
                     <div class="font-medium">{player.name}</div>
                     <div class="text-xs opacity-70">{player.id?.slice(0, 6)}</div>
                   </div>
-                  <div class="badge badge-primary">{ player.action || "Waiting"}</div>
+                  <div class="badge badge-primary">{player.action || "Waiting"}</div>
                   {#if player.dead}
                     <div class="badge badge-error">Dead</div>
-                  {:else if game.status.type === "end" && player.id === game.status.winner?.id}
+                  {:else if room.state?.status.type === "end" && player.id === room.state?.status.winner?.id}
                     <div class="badge badge-success">Win!</div>
                   {/if}
                 </div>
-              {/each}
+                {/each}
             </div>
             
             <div class="mt-4">
@@ -67,12 +67,12 @@ function handleLeaveGame() {
           <div class="card-body">
             <h2 class="card-title">Action</h2>
             <div class="space-y-2">
-              {#each ["グー", "チョキ", "パー"] as const as hand}
+              {#each hands as hand}
                 <button
                   class="btn btn-outline"
-                  disabled={roomController.processing}
-                  onclick={async () => {
-                    roomController.action(hand)
+                  disabled={room.processing || room.me?.action != null || room.me?.dead}
+                  onclick={() => {
+                    room.action(hand)
                   }}
                 >
                   {hand}

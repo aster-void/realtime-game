@@ -6,12 +6,31 @@ import { onMount } from "svelte";
 import { untrack } from "svelte";
 import { API_ENDPOINT, createClient } from "~/api/client.ts";
 import { useGlobal } from "~/controller/global.svelte.ts";
+import { useFetch } from "./_proto.ts";
 import { onServerEvent } from "./room.updater.ts";
 
 export class RoomController {
   private api = createClient({ fetch });
   private global = useGlobal();
   state = $state<Room>();
+  players = $derived(
+    this.state?.status.players
+      .toSorted((a, b) => {
+        if (a.dead && !b.dead) return 1;
+        if (!a.dead && b.dead) return -1;
+        return 0;
+      })
+      .sort((a, b) => {
+        if (a.id === this.global.userId) return -1;
+        if (b.id === this.global.userId) return 1;
+        return 0;
+      }) || [],
+  );
+  me = $derived(
+    this.state?.status.players?.find(
+      (player) => player.id === this.global.userId,
+    ),
+  );
   processing = $state(false);
   aiName = $state("");
 
@@ -39,53 +58,67 @@ export class RoomController {
 
   process<T>(fn: () => Promise<T>) {
     this.processing = true;
-    return fn().finally(() => {
-      this.processing = false;
-    });
+    return fn()
+      .catch((error) => {
+        console.error("Error processing:", error);
+      })
+      .finally(() => {
+        this.processing = false;
+      });
   }
+
   startGame() {
     return this.process(async () => {
-      if (!this.state) return;
-      await this.api.rooms[":id"].$patch({
-        param: {
-          id: this.state.id,
-        },
-        json: {
-          type: "start game",
-        },
-      });
+      const state = this.state;
+      if (!state) return;
+      await useFetch(() =>
+        this.api.rooms[":id"].$patch({
+          param: {
+            id: state.id,
+          },
+          json: {
+            type: "start game",
+          },
+        }),
+      );
     });
   }
 
   action(action: Hand) {
     return this.process(async () => {
-      if (!this.state) return;
-      await this.api.rooms[":id"].actions.$post({
-        param: {
-          id: this.state.id,
-        },
-        json: {
-          action,
-          userId: this.global.userId,
-        },
-      });
+      const state = this.state;
+      if (!state) return;
+      await useFetch(() =>
+        this.api.rooms[":id"].actions.$post({
+          param: {
+            id: state.id,
+          },
+          json: {
+            action,
+            userId: this.global.userId,
+          },
+        }),
+      );
     });
   }
 
   #updateUsername = useDebounce((username: string) => {
     return this.process(async () => {
-      if (!this.state) return;
+      const state = this.state;
+      if (!state) return;
       if (username.trim().length === 0) return;
-      await this.api.rooms[":id"].$patch({
-        param: {
-          id: this.state.id,
-        },
-        json: {
-          type: "user rename",
-          userId: this.global.userId,
-          userName: username,
-        },
-      });
+      await useFetch(() =>
+        this.api.rooms[":id"].$patch({
+          param: {
+            id: state.id,
+          },
+          json: {
+            type: "user rename",
+            userId: this.global.userId,
+            userName: username,
+          },
+        }),
+      );
     });
   }, 200);
 
@@ -98,11 +131,12 @@ export class RoomController {
     }
 
     return this.process(async () => {
-      if (!this.state) return;
-      try {
-        await this.api.rooms[":id"].$patch({
+      const state = this.state;
+      if (!state) return;
+      await useFetch(() =>
+        this.api.rooms[":id"].$patch({
           param: {
-            id: this.state.id,
+            id: state.id,
           },
           json: {
             type: "add player",
@@ -112,31 +146,27 @@ export class RoomController {
               isAI: true,
             },
           },
-        });
-
-        this.aiName = "";
-      } catch (error) {
-        console.error("Error adding AI player:", error);
-      }
+        }),
+      );
+      this.aiName = "";
     });
   }
 
   removeAI(aiId: string) {
     return this.process(async () => {
-      if (!this.state) return;
-      try {
-        await this.api.rooms[":id"].$patch({
+      const state = this.state;
+      if (!state) return;
+      await useFetch(() =>
+        this.api.rooms[":id"].$patch({
           param: {
-            id: this.state.id,
+            id: state.id,
           },
           json: {
             type: "remove ai",
             aiId,
           },
-        });
-      } catch (error) {
-        console.error("Error removing AI player:", error);
-      }
+        }),
+      );
     });
   }
 }
