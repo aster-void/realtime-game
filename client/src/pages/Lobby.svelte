@@ -1,8 +1,8 @@
 <script lang="ts">
 import type { Room } from "@repo/share/types";
 import RoomList from "~/components/RoomList.svelte";
-import { useGlobal } from "~/controller/global.svelte";
-import { LobbyController } from "~/controller/lobby.controller.svelte";
+import { useGlobal } from "~/controller/global.svelte.ts";
+import { LobbyController } from "~/controller/lobby.controller.svelte.ts";
 type Props = {
   defaultRooms: Room[];
 };

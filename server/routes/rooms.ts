@@ -5,6 +5,7 @@ import * as v from "valibot";
 import { unwrap } from "../lib/index.ts";
 import { param } from "../lib/validator.ts";
 import { json } from "../lib/validator.ts";
+import { createAIPlayer, makeAIMoves } from "../logic/ai.ts";
 import { resolve } from "../logic/hands.ts";
 import { rooms } from "../model/rooms.ts";
 
@@ -42,6 +43,7 @@ const route = new Hono()
         name: json.player.name,
         action: null,
         dead: false,
+        isAI: false,
       };
       const room: Room = {
         id: crypto.randomUUID(),
@@ -87,26 +89,28 @@ const route = new Hono()
           });
         }
         player.action = json.action;
-        if (room.status.players.every((player) => player.action !== null)) {
-          const result = resolve(room.status.players);
-          if (result.status === "end") {
-            room.status = {
-              type: "end",
-              winner: unwrap(result.players.find((player) => !player.dead)),
-              players: room.status.players,
-            };
-            return room;
-          }
+
+        // Process AI moves after human player's move
+        let updatedPlayers = room.status.players;
+        updatedPlayers = makeAIMoves(updatedPlayers);
+
+        const result = resolve(updatedPlayers);
+        if (result.status === "end") {
           room.status = {
-            type: "playing",
-            submitted: [],
-            players: result.players.map((player) => ({
-              ...player,
-              action: null,
-            })),
+            type: "end",
+            winner: unwrap(result.players.find((player) => !player.dead)),
+            players: updatedPlayers,
           };
           return room;
         }
+        room.status = {
+          type: "playing",
+          submitted: [],
+          players: result.players.map((player) => ({
+            ...player,
+            action: null,
+          })),
+        };
         return room;
       });
       return c.json({
@@ -122,11 +126,16 @@ const route = new Hono()
     json(
       v.union([
         v.object({
-          type: v.literal("join"),
+          type: v.literal("add player"),
           player: v.object({
             id: Uuid,
             name: v.string(),
+            isAI: v.boolean(),
           }),
+        }),
+        v.object({
+          type: v.literal("remove ai"),
+          aiId: v.string(),
         }),
         v.object({
           type: v.literal("user rename"),
@@ -142,7 +151,7 @@ const route = new Hono()
       const param = c.req.valid("param");
       const json = c.req.valid("json");
       switch (json.type) {
-        case "join": {
+        case "add player": {
           const room = rooms.findById(param.id);
           rooms.update(room.id, (room) => {
             if (room.status.type !== "waitroom") {
@@ -156,8 +165,7 @@ const route = new Hono()
               return room;
             }
             const player: Player = {
-              id: json.player.id,
-              name: json.player.name,
+              ...json.player,
               action: null,
               dead: false,
             };
@@ -165,7 +173,7 @@ const route = new Hono()
             return room;
           });
           return c.json({
-            room,
+            room: rooms.findById(param.id),
           });
         }
         case "user rename": {
@@ -185,16 +193,32 @@ const route = new Hono()
             room,
           });
         }
+        case "remove ai": {
+          const room = rooms.update(param.id, (room) => {
+            if (room.status.type !== "waitroom") {
+              throw new HTTPException(400, {
+                message: "can only remove AI in waitroom",
+              });
+            }
+            room.status.players = room.status.players.filter(
+              (player) => !(player.isAI && player.id === json.aiId),
+            );
+            return room;
+          });
+          return c.json({
+            room,
+          });
+        }
         case "start game": {
           const room = rooms.update(param.id, (room) => {
             room.status = {
               type: "playing",
               submitted: [],
               players: room.status.players.map((player) => ({
-                id: player.id,
-                name: player.name,
+                ...player,
                 dead: false,
                 action: null,
+                isAI: player.isAI,
               })),
             };
             return room;

@@ -17,6 +17,7 @@ matchingUsers.subscribe((users) => {
           name: id,
           dead: false,
           action: null,
+          isAI: false,
         })),
       },
     };

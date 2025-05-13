@@ -18,6 +18,8 @@ const config = {
     alias: {
       $lib: "./src/lib",
       "~": "./src/",
+      "@repo/share": "../share",
+      "@repo/server": "../server",
     },
   },
 };

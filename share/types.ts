@@ -23,6 +23,7 @@ export const Player = object({
   id: Uuid,
   dead: boolean(),
   action: union([Hand, null_()]),
+  isAI: boolean(),
 });
 export type Room = InferOutput<typeof Room>;
 export const Room = object({

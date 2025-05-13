@@ -10,6 +10,7 @@ function createPlayer(action: string): Player {
     id: crypto.randomUUID(),
     dead: false,
     action,
+    isAI: false,
   };
 }
 

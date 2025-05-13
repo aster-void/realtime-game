@@ -1,10 +1,10 @@
 import { goto } from "$app/navigation";
+import { useEventSource } from "$lib/index.ts";
 import { LobbyEvent, type Room, type Uuid } from "@repo/share/types";
 import type { Client, Fetch } from "~/api/client.ts";
 import { createClient } from "~/api/client.ts";
 import { API_ENDPOINT } from "~/api/client.ts";
 import { useGlobal } from "~/controller/global.svelte.ts";
-import { useEventSource } from "../lib/useEventSource.ts";
 
 export type LobbyState =
   | { type: "idle" }
@@ -129,10 +129,11 @@ export class LobbyController {
           id: roomId,
         },
         json: {
-          type: "join",
+          type: "add player",
           player: {
             id: this.global.userId,
             name: this.global.username,
+            isAI: false,
           },
         },
       });
