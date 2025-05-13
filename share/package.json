@@ -5,5 +5,8 @@
   "private": true,
   "dependencies": {
     "valibot": "^1.1.0"
+  },
+  "scripts": {
+    "check": "bun tsc --noEmit"
   }
 }
