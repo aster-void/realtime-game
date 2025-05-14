@@ -24,7 +24,18 @@ $effect(() => {
         <h1 class="card-title text-2xl md:text-3xl font-bold">
           {room.state?.name}
           <div class="badge badge-lg ml-2">
-            {room.state?.status.type}
+            {(() => {
+              switch (room.state?.status.type) {
+                case "waitroom":
+                  return "Waiting";
+                case "playing":
+                  return "Playing";
+                case "end":
+                  return "Ended";
+                default:
+                  return "Unknown";
+              }
+            })()}
           </div>
         </h1>
         <p class="text-sm opacity-70 mt-1">

@@ -5,8 +5,9 @@ import type { RoomController } from "../../controller/room.controller.svelte.ts"
 type Props = {
   aiPlayers: Player[];
   room: RoomController;
+  winnerId: string | undefined;
 };
-const { aiPlayers, room }: Props = $props();
+const { aiPlayers, room, winnerId }: Props = $props();
 </script>
 
 <div class="card bg-base-100 shadow-xl mb-6">
@@ -39,7 +40,7 @@ const { aiPlayers, room }: Props = $props();
               {#each aiPlayers as ai}
                 <div class="flex justify-between items-center p-2 bg-base-200 rounded">
                   <div class="flex items-center gap-2">
-                    <span>🤖</span>
+                    <span>{winnerId === ai.id ? "👑" : ai.dead ? "💀" : "🤖"}</span>
                     <span>{ai.name}</span>
                   </div>
                   <button 

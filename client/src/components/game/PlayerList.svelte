@@ -4,11 +4,15 @@ import type { RoomController } from "~/controller/room.controller.svelte.ts";
 
 type Props = {
   room: RoomController;
+  showAIs: boolean;
 };
-const { room }: Props = $props();
+const { room, showAIs }: Props = $props();
 
 const global = useGlobal();
 const game = $derived(room.state?.status);
+const players = $derived(
+  showAIs ? room.players : room.players.filter((p) => !p.isAI),
+);
 </script>
 
 <div class="card bg-base-100 shadow-xl h-full">
@@ -19,11 +23,11 @@ const game = $derived(room.state?.status);
         {room.players.length}
       </div>
     </h2>
-    
+
     <div class="overflow-y-auto max-h-96 rounded-xl">
-      {#if room.players.length > 0}
+      {#if players.length > 0}
         <ul class="bg-base-200">
-          {#each room.players as player}
+          {#each players as player}
           {@const isWinner = game?.type === "end" && game?.winner.id === player.id}
           {@const isMe = player.id === global.userId}
             <li class="flex flex-row items-center gap-2 border-b border-gray-300 py-2 px-4 {isWinner ? "bg-green-100" : isMe ? "bg-blue-100" : player.dead ? "bg-red-100" : ""}">
