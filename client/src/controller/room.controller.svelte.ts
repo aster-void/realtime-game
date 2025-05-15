@@ -7,15 +7,17 @@ import { untrack } from "svelte";
 import { API_ENDPOINT, createClient } from "~/api/client.ts";
 import { useGlobal } from "~/controller/global.svelte.ts";
 import { useFetch } from "./_proto.ts";
-import { onServerEvent } from "./room.updater.ts";
+import { onServerEvent } from "./updater/room.ts";
 
 export class RoomController {
   private api = createClient({ fetch });
   private global = useGlobal();
-  state = $state<Room>();
-  players = $derived(
-    this.state?.status.players
-      .toSorted((a, b) => {
+  state = $state<Room>(); // this should never be null (see constructor)
+  players = $derived.by(() => {
+    const clone = this.state?.status.players.slice();
+    if (!clone) return []; // this should not happen
+    return clone
+      .sort((a, b) => {
         if (a.dead && !b.dead) return 1;
         if (!a.dead && b.dead) return -1;
         return 0;
@@ -24,8 +26,8 @@ export class RoomController {
         if (a.id === this.global.userId) return -1;
         if (b.id === this.global.userId) return 1;
         return 0;
-      }) || [],
-  );
+      });
+  });
   me = $derived(
     this.state?.status.players?.find(
       (player) => player.id === this.global.userId,
@@ -56,7 +58,7 @@ export class RoomController {
     });
   }
 
-  process<T>(fn: () => Promise<T>) {
+  async process<T>(fn: () => Promise<T>) {
     this.processing = true;
     return fn()
       .catch((error) => {

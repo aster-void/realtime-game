@@ -7,8 +7,8 @@ import { json } from "../lib/validator.ts";
 import { rooms } from "../model/rooms.ts";
 
 const route = new Hono()
-  .get("/", (c) => {
-    const data = rooms.all;
+  .get("/", async (c) => {
+    const data = await rooms.all();
     return c.json(data);
   })
   .get(
@@ -18,8 +18,8 @@ const route = new Hono()
     }),
     async (c) => {
       const param = c.req.valid("param");
-      const room = rooms.findById(param.id);
-      return c.json<Room>(room);
+      const room = await rooms.findById(param.id);
+      return c.json(room);
     },
   )
   .post(
@@ -110,8 +110,7 @@ const route = new Hono()
       const json = c.req.valid("json");
       switch (json.type) {
         case "add player": {
-          const room = rooms.findById(param.id);
-          rooms.update(room.id, (room) => {
+          const room = await rooms.update(param.id, (room) => {
             if (
               room.status.players.find((player) => player.id === json.player.id)
             ) {
@@ -126,11 +125,11 @@ const route = new Hono()
             return room;
           });
           return c.json({
-            room: rooms.findById(param.id),
+            room,
           });
         }
         case "user rename": {
-          const room = rooms.update(param.id, (room) => {
+          const room = await rooms.update(param.id, (room) => {
             const prev = room.status.players.find(
               (player) => player.id === json.userId,
             );
@@ -147,7 +146,7 @@ const route = new Hono()
           });
         }
         case "remove ai": {
-          const room = rooms.update(param.id, (room) => {
+          const room = await rooms.update(param.id, (room) => {
             room.status.players = room.status.players.filter(
               (player) => !(player.isAI && player.id === json.aiId),
             );
@@ -158,7 +157,7 @@ const route = new Hono()
           });
         }
         case "start game": {
-          const room = rooms.update(param.id, (room) => {
+          const room = await rooms.update(param.id, (room) => {
             room.status = {
               type: "playing",
               submitted: [],

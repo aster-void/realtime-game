@@ -14,7 +14,7 @@ const route = new Hono()
     }),
     async (c) => {
       const param = c.req.valid("param");
-      const room = rooms.find((room) => room.id === param.room);
+      const room = rooms.findById(param.room);
       return streamSSE(c, async (stream) => {
         async function sendMessage(ev: RoomEvent) {
           await stream.writeSSE({
@@ -22,7 +22,7 @@ const route = new Hono()
           });
         }
 
-        const unsubscribe = rooms.listen(param.room, sendMessage);
+        const unsubscribe = await rooms.listen(param.room, sendMessage);
         stream.onAbort(() => {
           unsubscribe();
         });

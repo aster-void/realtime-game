@@ -4,15 +4,18 @@ import { unwrap } from "../lib/index.ts";
 import * as ai from "../logic/ai.ts";
 import { resolve } from "../logic/hands.ts";
 import { isAllSettled } from "../logic/room.ts";
-import { rooms as persist } from "./_persist.ts";
+import * as persist from "./_persist.ts";
 import * as proto from "./_proto.ts";
 import { lobby } from "./lobby.ts";
 
 export namespace rooms {
   // read methods
-  export const all = persist;
-  export function find(where: (room: Room) => boolean): Room {
-    const room = persist.find(where);
+  export async function all() {
+    return persist.rooms.loadAll();
+  }
+  /** This is an expensive method. don't overuse. */
+  export async function find(where: (room: Room) => boolean): Promise<Room> {
+    const room = persist.rooms.loadAll().find(where);
     if (!room) {
       throw new HTTPException(404, {
         message: "room not found",
@@ -20,31 +23,26 @@ export namespace rooms {
     }
     return room;
   }
-  export function findById(id: string): Room {
-    const room = find((room) => room.id === id);
-    return room;
-  }
-  export const findIndex = (where: (room: Room) => boolean): number => {
-    const idx = persist.findIndex(where);
-    if (idx === -1) {
+  export async function findById(id: string): Promise<Room> {
+    const room = persist.rooms.load(id);
+    if (!room) {
       throw new HTTPException(404, {
         message: "room not found",
       });
     }
-    return idx;
-  };
+    return room;
+  }
 
   // mutation
-  export function push(room: Room): void {
-    persist.push(room);
+  export async function push(room: Room): Promise<void> {
+    persist.rooms.save(room);
     lobby.notify({
       type: "room create",
       room,
     });
   }
-  export function set(id: string, room: Room): void {
-    const index = rooms.findIndex((room) => room.id === id);
-    persist[index] = room;
+  export async function set(id: string, room: Room): Promise<void> {
+    persist.rooms.save(room);
     notify(id, {
       type: "room update",
       room,
@@ -55,14 +53,21 @@ export namespace rooms {
       room,
     });
   }
-  export const update = (id: string, fn: (room: Room) => Room): Room => {
-    const prev = findById(id);
+  export async function update(
+    id: string,
+    fn: (room: Room) => Room,
+  ): Promise<Room> {
+    const prev = await findById(id);
     const room = fn(prev);
-    set(id, room);
+    await set(id, room);
     return room;
-  };
+  }
 
-  export function makeMove(roomId: Uuid, playerId: Uuid, action: Hand): Room {
+  export async function makeMove(
+    roomId: Uuid,
+    playerId: Uuid,
+    action: Hand,
+  ): Promise<Room> {
     return rooms.update(roomId, (room) => {
       if (room.status.type !== "playing") {
         throw new HTTPException(400, {
@@ -121,9 +126,9 @@ export namespace rooms {
       return room;
     });
   }
-  export function planAIMoves(roomId: Uuid) {
+  export async function planAIMoves(roomId: Uuid) {
     ai.planAIMoves(
-      rooms.findById(roomId).status.players,
+      (await rooms.findById(roomId)).status.players,
       1500,
       (playerId, action) => {
         rooms.makeMove(roomId, playerId, action);
@@ -132,13 +137,13 @@ export namespace rooms {
   }
 
   // pub / sub methods
-  export const notify = (id: string, message: RoomEvent): void => {
+  export async function notify(id: string, message: RoomEvent): Promise<void> {
     proto.post(`room:${id}`, message);
-  };
-  export const listen = (
+  }
+  export async function listen(
     room: string,
     onMessage: (message: RoomEvent) => void,
-  ): (() => void) => {
+  ): Promise<() => void> {
     return proto.listen(`room:${room}`, RoomEvent, onMessage);
-  };
+  }
 }

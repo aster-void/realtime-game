@@ -1,6 +1,8 @@
 import { BroadcastChannel } from "node:worker_threads";
 import * as v from "valibot";
 
+// TODO: replace these methods with redis pubsub
+
 export function post<T>(path: string, data: T) {
   const bc = new BroadcastChannel(path);
   bc.postMessage(data);
@@ -11,7 +13,7 @@ export function listen<T>(
   path: string,
   schema: v.GenericSchema<T>,
   onMessage: (message: T) => void,
-) {
+): () => void {
   const bc = new BroadcastChannel(path);
   bc.onmessage = (ev: unknown) => {
     const data = (ev as MessageEvent<unknown>).data;

@@ -13,9 +13,10 @@
     "check": "bun tsc --noEmit"
   },
   "dependencies": {
-    "@repo/share": "workspace:share",
     "@hono/valibot-validator": "^0.5.2",
+    "@repo/share": "workspace:share",
     "hono": "^4.7.9",
+    "redis": "^5.0.1",
     "svelte": "^5.28.2",
     "valibot": "^1.1.0"
   }
