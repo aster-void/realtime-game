@@ -1,10 +1,9 @@
 import type { Room } from "@repo/share/types";
-import { writable } from "svelte/store";
+import { matchingUsers as persist } from "./_persist.ts";
 import { lobby } from "./lobby";
 import { rooms } from "./rooms";
 
-const matchingUsers = writable<string[]>([]);
-matchingUsers.subscribe((users) => {
+persist.subscribe((users) => {
   if (users.length >= 2) {
     const players = users.splice(0, 2);
     const room: Room = {
@@ -31,13 +30,13 @@ matchingUsers.subscribe((users) => {
         user,
       );
     }
-    matchingUsers.set([]);
+    persist.set([]);
   }
 });
 
 export namespace matcher {
   export function register(id: string) {
-    matchingUsers.update((users) => {
+    persist.update((users) => {
       if (users.includes(id)) {
         return users;
       }
@@ -46,7 +45,7 @@ export namespace matcher {
     });
   }
   export function unregister(id: string) {
-    matchingUsers.update((users) => {
+    persist.update((users) => {
       if (!users.includes(id)) {
         return users;
       }

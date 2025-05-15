@@ -4,52 +4,47 @@ import { unwrap } from "../lib/index.ts";
 import * as ai from "../logic/ai.ts";
 import { resolve } from "../logic/hands.ts";
 import { isAllSettled } from "../logic/room.ts";
+import { rooms as persist } from "./_persist.ts";
 import * as proto from "./_proto.ts";
 import { lobby } from "./lobby.ts";
-const _rooms = <Room[]>[];
 
 export namespace rooms {
   // read methods
-  export const all = _rooms;
-  export const find = (where: (room: Room) => boolean): Room => {
-    const room = _rooms.find(where);
+  export const all = persist;
+  export function find(where: (room: Room) => boolean): Room {
+    const room = persist.find(where);
     if (!room) {
       throw new HTTPException(404, {
         message: "room not found",
       });
     }
     return room;
-  };
-  export const findById = (id: string): Room => {
+  }
+  export function findById(id: string): Room {
     const room = find((room) => room.id === id);
     return room;
-  };
+  }
   export const findIndex = (where: (room: Room) => boolean): number => {
-    const room = _rooms.findIndex(where);
-    if (room === -1) {
+    const idx = persist.findIndex(where);
+    if (idx === -1) {
       throw new HTTPException(404, {
         message: "room not found",
       });
     }
-    return room;
+    return idx;
   };
 
   // mutation
-  export const push = (room: Room): void => {
-    _rooms.push(room);
+  export function push(room: Room): void {
+    persist.push(room);
     lobby.notify({
       type: "room create",
       room,
     });
-  };
-  export const set = (id: string, room: Room): void => {
-    const index = _rooms.findIndex((room) => room.id === id);
-    if (index === -1) {
-      throw new HTTPException(404, {
-        message: "room not found",
-      });
-    }
-    _rooms[index] = room;
+  }
+  export function set(id: string, room: Room): void {
+    const index = rooms.findIndex((room) => room.id === id);
+    persist[index] = room;
     notify(id, {
       type: "room update",
       room,
@@ -59,7 +54,7 @@ export namespace rooms {
       id,
       room,
     });
-  };
+  }
   export const update = (id: string, fn: (room: Room) => Room): Room => {
     const prev = findById(id);
     const room = fn(prev);
